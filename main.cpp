@@ -66,14 +66,47 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 	return res;
 }
 
+static int vkfs_read(const char *path, char *buf, size_t size, off_t offset,
+		      struct fuse_file_info *fi)
+{
+	size_t len;
+	(void) fi;
+//	if(strcmp(path, hello_path) != 0)
+//		return -ENOENT;
+
+/*	len = strlen(hello_str);
+	if (offset < len) {
+		if (offset + size > len)
+			size = len - offset;
+		memcpy(buf, hello_str + offset, size);
+	} else
+		size = 0;
+*/
+    ;
+
+	return size;
+}
+
+static int vkfs_open(const char *path, struct fuse_file_info *fi)
+{
+//	if (strcmp(path, hello_path) != 0)
+//		return -ENOENT;
+
+	if ((fi->flags & 3) != O_RDONLY)
+		return -EACCES;
+
+	return 0;
+}
+
 static struct fuse_operations vkfs_opers;
 
 int main(int argc, char* argv[])
 {
-    vkfs_opers.getattr	= vkfs_getattr,
-	vkfs_opers.getdir	= vkfs_getdir,
-//	vkfs_opers.open		= vkfs_open,
-//	vkfs_opers.read		= vkfs_read
+    vkfs_opers.getattr	= vkfs_getattr;
+	vkfs_opers.getdir	= vkfs_getdir;
+	vkfs_opers.open		= vkfs_open;
+	vkfs_opers.read		= vkfs_read;
+
     fuse_main(argc, argv, &vkfs_opers);
     return 0;
 }
