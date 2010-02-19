@@ -1,0 +1,10 @@
+# depslib dependency file v1.0
+1266607009 source:/home/roma/projects/vkfs/main.cpp
+	<stdlib.h>
+	<string.h>
+	<errno.h>
+	<curlpp/cURLpp.hpp>
+	<curlpp/Easy.hpp>
+	<curlpp/Options.hpp>
+	<fuse.h>
+
