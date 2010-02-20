@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1266659843 source:/home/roma/projects/vkfs/main.cpp
+1266663677 source:/home/roma/projects/vkfs/main.cpp
 	<stdlib.h>
 	<string.h>
 	<errno.h>
@@ -7,6 +7,7 @@
 	<curlpp/Easy.hpp>
 	<curlpp/Options.hpp>
 	"vklib/vklib.h"
+	<time.h>
 	<fuse.h>
 
 1266657125 /home/roma/projects/vkfs/vklib/vklib.h
