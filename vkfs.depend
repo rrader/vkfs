@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1266663677 source:/home/roma/projects/vkfs/main.cpp
+1266703456 source:/home/roma/projects/vkfs/main.cpp
 	<stdlib.h>
 	<string.h>
 	<errno.h>
@@ -10,7 +10,7 @@
 	<time.h>
 	<fuse.h>
 
-1266657125 /home/roma/projects/vkfs/vklib/vklib.h
+1266702987 /home/roma/projects/vkfs/vklib/vklib.h
 	<string.h>
 	"json/reader.h"
 	"json/writer.h"
@@ -54,7 +54,7 @@
 	<iostream>
 	<iomanip>
 
-1266662916 source:/home/roma/projects/vkfs/vklib/vklib.cpp
+1266702972 source:/home/roma/projects/vkfs/vklib/vklib.cpp
 	<iostream>
 	<curlpp/cURLpp.hpp>
 	<curlpp/Easy.hpp>

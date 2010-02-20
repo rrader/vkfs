@@ -34,6 +34,9 @@ int vkid;
 string WallText;
 time_t WallTextUpdate;
 
+string MyInfoText;
+time_t MyInfoTextUpdate;
+
 string IntToStr(int i)
 {
     string str;
@@ -50,7 +53,7 @@ string GetWallText()
     if (now-WallTextUpdate>60)
     {
         vklib::VKWallReader wall;
-        wall.ReadWall(session,vkid,0,10);
+        wall.RetrieveWall(session,vkid,0,10);
         string ret="Всего сообщений: "+IntToStr(wall.MessageCount())+'\n';
         ret+="Сообщения 1-10:\n\n";
         for (int i=0;i<10;i++)
@@ -63,6 +66,48 @@ string GetWallText()
         WallTextUpdate=time(NULL);
     }
     return WallText;
+}
+
+string GetMyInfoText()
+{
+    time_t now = time (NULL);
+
+    if (now-MyInfoTextUpdate>60)
+    {
+        session.RetrievePersonalInfo();
+        string ret=session.GetFirstName()+" "+session.GetMiddleName()+" "+session.GetLastName()+"\n---------------------------\n";
+        ret+="Статус: "+session.GetStatus()+"\n\n";
+        ret+="Местоположение: "+session.GetCountryName()+", "+session.GetCityName()+"\n";
+        ret+="Дата рождения: "+IntToStr(session.GetUserBirdthDay())+"."+IntToStr(session.GetUserBirdthMonth())+"."+IntToStr(session.GetUserBirdthYear())+"\n";
+        ret+="Город рождения: "+session.GetBirdthCityName()+"\n";
+        ret+="Семейное положение: ";
+        switch (session.GetMaritalStatus())
+        {
+            case 1:ret+="Не женат";
+            case 2:ret+="Есть подруга";
+            case 3:ret+="Обручен";
+            case 4:ret+="Женат";
+            case 5:ret+="Всё сложно";
+            case 6:ret+="В активном поиске";
+        }
+        ret+="\nПолитические взгляды: ";
+        switch (session.GetPoliticalStatus())
+        {
+            case 1:ret+="коммунистические";
+            case 2:ret+="социалистические";
+            case 3:ret+="умеренные";
+            case 4:ret+="либеральные";
+            case 5:ret+="консервативные";
+            case 6:ret+="монархические";
+            case 7:ret+="ультраконсервативные";
+            case 8:ret+="индифферентные";
+        }
+        ret+="\n";
+
+        MyInfoText=ret;
+        MyInfoTextUpdate=time(NULL);
+    }
+    return MyInfoText;
 }
 
 static int vkfs_getattr(const char *path, struct stat *stbuf)
@@ -85,7 +130,8 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	} else if (strcmp(path, MyInfo_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen("123!")+1;
+		string ret=GetMyInfoText();
+		stbuf->st_size = ret.size()+1;
 	} else if (strcmp(path, Wall_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
@@ -140,12 +186,14 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
 */
 	if(strcmp(path, MyInfo_file_p) == 0)
 	{
-	    len = strlen("123!");
+        string ret=GetMyInfoText();
+	    len = ret.size();
 	    if (offset < len)
 	    {
+            size=len;/*
 	        if (offset + size > len)
-                size = len-offset;
-            memcpy(buf, "123!" + offset, size);
+                size = len-offset; */
+            memcpy(buf, ret.c_str() , size);//+ offset
 	    }
             else size=0;
 	}
@@ -192,5 +240,8 @@ int main(int argc, char* argv[])
     cout<<"password:";
     cin>>passwd;
     session.Login(email,passwd);
+    session.RetrievePersonalInfo();
+    vkid=session.GetVkontakteID();
+    cout<<"Your ID: "<<vkid<<"\n";
     return fuse_main(argc, argv, &vkfs_opers);
 }

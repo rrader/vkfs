@@ -5,19 +5,39 @@
 
 namespace vklib
 {
-
     class VKObject
     {
     public:
         int Login(std::string EMail,std::string Passwd);
+        int RetrievePersonalInfo();
+        int GetVkontakteID();
+        std::string GetFirstName();
+        std::string GetMiddleName();
+        std::string GetLastName();
+        std::string GetStatus();
+        int GetCountryID();
+        std::string GetCountryName();
+        int GetCityID();
+        std::string GetCityName();
+        std::string GetBirdthCityName();
+        int GetMaritalStatus();
+        int GetPoliticalStatus();
+        int GetUserBirdthDay();
+        int GetUserBirdthMonth();
+        int GetUserBirdthYear();
+
         std::string sid;
+        std::string remixpassword;
     private:
+        json::Object profile;
     };
+
+    int CheckResponse(VKObject& session,std::string rp);
 
     class VKWallReader
     {
     public:
-        int ReadWall(VKObject& session,int uid,int from, int to);
+        int RetrieveWall(VKObject& session,int uid,int from, int to);
         int MessageCount();
         int GetMessageID(int n);
         int GetMessageTime(int n);
@@ -27,6 +47,7 @@ namespace vklib
         std::string GetMessageSenderName(int n);
         json::Object jsonresponse;
     private:
+        VKObject* sess;
     };
 
 }
