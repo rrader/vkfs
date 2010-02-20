@@ -2,19 +2,24 @@
 #include <string.h>
 #include <errno.h>
 
-# include <curlpp/cURLpp.hpp>
-# include <curlpp/Easy.hpp>
-# include <curlpp/Options.hpp>
+#include <curlpp/cURLpp.hpp>
+#include <curlpp/Easy.hpp>
+#include <curlpp/Options.hpp>
 
 #include <fuse.h>
 
 using namespace curlpp::options;
 
-const char *Info_dir = "/Моя информация";
+/*const char *Info_dir = "/Моя информация";
 const char *MyInfo_file_p = "/Моя информация/Обо мне";
 const char *MyInfo_file = "Обо мне";
 
-const char *Msg_dir = "/Мои сообщения";
+const char *Msg_dir = "/Мои сообщения";*/
+const char *Info_dir = "/My_Info";
+const char *MyInfo_file_p = "/My_Info/AboutMe";
+const char *MyInfo_file = "AboutMe";
+
+const char *Msg_dir = "/Messages";
 
 
 static int vkfs_getattr(const char *path, struct stat *stbuf)
@@ -66,11 +71,11 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 	return res;
 }
 
-static int vkfs_read(const char *path, char *buf, size_t size, off_t offset,
-		      struct fuse_file_info *fi)
+static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
+//		      struct fuse_file_info *fi)
 {
 	size_t len;
-	(void) fi;
+//	(void) fi;
 //	if(strcmp(path, hello_path) != 0)
 //		return -ENOENT;
 
@@ -82,18 +87,28 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset,
 	} else
 		size = 0;
 */
-    ;
+	//if(strcmp(path, MyInfo_file_p) == 0)
+	{
+	    len = strlen("123!");
+	    if (offset < len)
+	    {
+	        if (offset + size > len)
+                size = len-offset;
+            memcpy(buf, "123!" + offset, size);
+	    }
+            else size=0;
+	}
 
 	return size;
 }
 
-static int vkfs_open(const char *path, struct fuse_file_info *fi)
+static int vkfs_open(const char *path, int fi)
 {
 //	if (strcmp(path, hello_path) != 0)
 //		return -ENOENT;
 
-	if ((fi->flags & 3) != O_RDONLY)
-		return -EACCES;
+//	if ((fi->flags & 3) != O_RDONLY)
+//		return -EACCES;
 
 	return 0;
 }

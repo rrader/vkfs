@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1266607009 source:/home/roma/projects/vkfs/main.cpp
+1266610187 source:/home/roma/projects/vkfs/main.cpp
 	<stdlib.h>
 	<string.h>
 	<errno.h>
