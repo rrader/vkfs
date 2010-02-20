@@ -187,18 +187,10 @@ int main(int argc, char* argv[])
 	vkfs_opers.getdir	= vkfs_getdir;
 	vkfs_opers.open		= vkfs_open;
 	vkfs_opers.read		= vkfs_read;
-/*#ifdef FAST=1
-    email="rader@nm.ru";
-    passwd="rader230393";
-    vkid=2809346;
-#else */
     cout<<"e-mail:";
     cin>>email;
     cout<<"password:";
     cin>>passwd;
-    cout<<"your vkontakte-id:";
-    cin>>vkid;
-//#endif
     session.Login(email,passwd);
     return fuse_main(argc, argv, &vkfs_opers);
 }
