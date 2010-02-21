@@ -25,9 +25,14 @@ namespace vklib
         int GetUserBirdthDay();
         int GetUserBirdthMonth();
         int GetUserBirdthYear();
+        std::string GetProfileImagePath();
+        int GetAvatarSize();
+        int RetreiveAvatar();
 
         std::string sid;
         std::string remixpassword;
+        void* avatar;
+        int avatarsize;
     private:
         json::Object profile;
     };

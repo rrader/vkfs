@@ -21,8 +21,10 @@ const char *Msg_dir = "/Мои сообщения";*/
 const char *Info_dir = "/My_Info";
 const char *MyInfo_file_p = "/My_Info/AboutMe";
 const char *Wall_file_p = "/My_Info/Wall";
+const char *Avatar_file_p = "/My_Info/avatar.jpg";
 const char *MyInfo_file = "AboutMe";
 const char *Wall_file = "Wall";
+const char *Avatar_file = "avatar.jpg";
 
 const char *Msg_dir = "/Messages";
 
@@ -36,6 +38,9 @@ time_t WallTextUpdate;
 
 string MyInfoText;
 time_t MyInfoTextUpdate;
+
+time_t AvatarUpdate,AvatarSizeUpdate;
+int avatarsize;
 
 string IntToStr(int i)
 {
@@ -110,6 +115,31 @@ string GetMyInfoText()
     return MyInfoText;
 }
 
+
+int GetAvatarSize()
+{
+    time_t now = time (NULL);
+
+    if (now-AvatarSizeUpdate>600)
+    {
+        avatarsize=session.GetAvatarSize();
+        AvatarSizeUpdate=time(NULL);
+    }
+    return avatarsize;
+}
+
+void* GetAvatar()
+{
+    time_t now = time (NULL);
+
+    if (now-AvatarUpdate>600)
+    {
+        session.RetreiveAvatar();
+        AvatarUpdate=time(NULL);
+    }
+    return session.avatar;
+}
+
 static int vkfs_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
@@ -137,7 +167,11 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_nlink = 1;
 		string ret=GetWallText();
 		stbuf->st_size = ret.size()+1;
-	} else
+	} else if (strcmp(path, Avatar_file_p) == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+		stbuf->st_size = GetAvatarSize();
+	}else
 	{
 		res = -ENOENT;
 	}
@@ -164,6 +198,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, "..", NULL);
         res=filler(h, MyInfo_file, NULL);
         res=filler(h, Wall_file, NULL);
+        res=filler(h, Avatar_file, NULL);
     }
 	return res;
 }
@@ -200,7 +235,6 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
 
 	if(strcmp(path, Wall_file_p) == 0)
 	{
-
         string ret=GetWallText();
 	    len = ret.size();
 	    if (offset < len)
@@ -209,6 +243,19 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
 	        if (offset + size > len)
                 size = len-offset; */
             memcpy(buf, ret.c_str() , size);//+ offset
+	    }
+            else size=0;
+	}
+
+	if(strcmp(path, Avatar_file_p) == 0)
+	{
+	    len = GetAvatarSize();
+	    if (offset < len)
+	    {
+            size=len;/*
+	        if (offset + size > len)
+                size = len-offset; */
+            memcpy(buf, GetAvatar() , GetAvatarSize());//+ offset
 	    }
             else size=0;
 	}

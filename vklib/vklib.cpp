@@ -17,6 +17,8 @@ using namespace types;
 using namespace std;
 
 std::string RequestAnswer;
+void* m_pBuffer;
+int m_BufferSize;
 
 string IntToStr(int i)
 {
@@ -27,17 +29,45 @@ string IntToStr(int i)
     return stream.str();
 }
 
-size_t WriteMemoryCallback(char* ptr, size_t size, size_t nmemb)
+int StrToInt (const string &str)
+{
+    stringstream ss(str);
+    int n;
+    ss >> n;
+    return n;
+}
+
+size_t WriteStringCallback(char* ptr, size_t size, size_t nmemb)
 {
     RequestAnswer += ptr;
     int FullSize = size*nmemb;
     return FullSize;
 }
 
+size_t WriteMemoryCallback(char* ptr, size_t size, size_t nmemb)
+{
+  // Calculate the real size of the incoming buffer
+  size_t realsize = size * nmemb;
+
+  // (Re)Allocate memory for the buffer
+  m_pBuffer = (char*) realloc(m_pBuffer, m_BufferSize + realsize);
+
+  // Test if Buffer is initialized correctly & copy memory
+  if (m_pBuffer == NULL) {
+    realsize = 0;
+  }
+
+  memcpy((m_pBuffer+m_BufferSize), ptr, realsize);
+  m_BufferSize += realsize;
+
+  // return the real size of the buffer...
+  return realsize;
+};
+
 int VKObject::Login(std::string EMail,std::string Passwd)
 {
     Easy* request=new Easy;
-    WriteFunctionFunctor functor(WriteMemoryCallback);
+    WriteFunctionFunctor functor(WriteStringCallback);
     WriteFunction* cb = new curlpp::options::WriteFunction(functor);
     request->setOpt(cb);
     request->setOpt(Url("http://login.userapi.com/auth"));
@@ -70,7 +100,7 @@ int CheckResponse(VKObject& session,std::string rp)
     if (strcmp(rp.c_str(),"{\"ok\":-1}")==0)
     {
         Easy* request=new Easy;
-        WriteFunctionFunctor functor(WriteMemoryCallback);
+        WriteFunctionFunctor functor(WriteStringCallback);
         WriteFunction* cb = new curlpp::options::WriteFunction(functor);
         request->setOpt(cb);
         request->setOpt(Url("http://login.userapi.com/auth"));
@@ -95,6 +125,56 @@ int CheckResponse(VKObject& session,std::string rp)
     return 0;
 }
 
+int VKObject::GetAvatarSize()
+{
+    Easy* request=new Easy;
+    WriteFunctionFunctor functor(WriteStringCallback);
+    WriteFunction* cb = new curlpp::options::WriteFunction(functor);
+    request->setOpt(cb);
+    request->setOpt(Url(GetProfileImagePath()));
+    request->setOpt(HttpGet(true));
+    request->setOpt(NoBody(true));
+    request->setOpt(Header(true));
+    request->setOpt(MaxRedirs(0));
+    RequestAnswer="";
+    request->perform();
+    delete request;
+
+    if (CheckResponse(*this,RequestAnswer)!=0)
+    {
+        return GetAvatarSize();
+    }
+    cout<<RequestAnswer;
+    int is=RequestAnswer.find("Content-Length:");
+    is=RequestAnswer.find(" ",is+1)+1;
+    int i=is;
+    string x="";
+    while ((RequestAnswer[i]!='\xD')and(RequestAnswer[i]!='\xA')and(RequestAnswer[i]!='\n'))
+        x+=RequestAnswer[i++];
+    return StrToInt(x);
+}
+
+int VKObject::RetreiveAvatar()
+{
+    Easy* request=new Easy;
+    WriteFunctionFunctor functor(WriteMemoryCallback);
+    WriteFunction* cb = new curlpp::options::WriteFunction(functor);
+    request->setOpt(cb);
+    request->setOpt(Url(GetProfileImagePath()));
+    request->setOpt(HttpGet(true));
+    request->setOpt(Header(false));
+    request->setOpt(MaxRedirs(0));
+    RequestAnswer="";
+    request->perform();
+    delete request;
+
+    avatarsize=m_BufferSize;
+    avatar=m_pBuffer;
+
+    return avatarsize;
+}
+
+
 inline std::string replacestr(std::string text, std::string s, std::string d)
 {
   for(unsigned index=0; index=text.find(s, index), index!=std::string::npos;)
@@ -108,7 +188,7 @@ inline std::string replacestr(std::string text, std::string s, std::string d)
 int VKObject::RetrievePersonalInfo()
 {
     Easy* request=new Easy;
-    WriteFunctionFunctor functor(WriteMemoryCallback);
+    WriteFunctionFunctor functor(WriteStringCallback);
     WriteFunction* cb = new curlpp::options::WriteFunction(functor);
     request->setOpt(cb);
     request->setOpt(Url("http://userapi.com/data"));
@@ -140,6 +220,11 @@ int VKObject::RetrievePersonalInfo()
 int VKObject::GetVkontakteID()
 {
     return ((json::Number&)(profile["id"])).Value();
+}
+
+string VKObject::GetProfileImagePath()
+{
+    return ((json::String&)(profile["bp"])).Value();
 }
 
 string VKObject::GetFirstName()
@@ -216,7 +301,7 @@ int VKWallReader::RetrieveWall(VKObject& session,int uid,int from, int to)
 {
     sess=&session;
     Easy* wall=new Easy;
-    WriteFunctionFunctor functor(WriteMemoryCallback);
+    WriteFunctionFunctor functor(WriteStringCallback);
     WriteFunction* cb = new curlpp::options::WriteFunction(functor);
     wall->setOpt(cb);
     wall->setOpt(Url("http://userapi.com/data"));
