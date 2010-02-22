@@ -7,7 +7,9 @@
 #include <curlpp/Options.hpp>
 #include "vklib/vklib.h"
 #include <time.h>
+#include <fstream>
 
+#define FUSE_USE_VERSION 26
 #include <fuse.h>
 
 using namespace curlpp::options;
@@ -22,9 +24,14 @@ const char *Info_dir = "/My_Info";
 const char *MyInfo_file_p = "/My_Info/AboutMe";
 const char *Wall_file_p = "/My_Info/Wall";
 const char *Avatar_file_p = "/My_Info/avatar.jpg";
+const char *MyPhotos_dir = "Photos";
+const char *MyPhotos_dir_p = "/My_Info/Photos";
+const char *MyPhotos_dir_p_f = "/My_Info/Photos/";
+const char *MyPhotos_file_prefix = "Photo_";
 const char *MyInfo_file = "AboutMe";
 const char *Wall_file = "Wall";
 const char *Avatar_file = "avatar.jpg";
+
 
 const char *Msg_dir = "/Messages";
 
@@ -41,6 +48,15 @@ time_t MyInfoTextUpdate;
 
 time_t AvatarUpdate,AvatarSizeUpdate;
 int avatarsize;
+
+int log_echo(string s,string path)
+{
+    std::string u="echo \"";
+    u+=s;
+    u+="\" >> "+path;
+    system(u.c_str());
+    return 0;
+}
 
 string IntToStr(int i)
 {
@@ -143,20 +159,54 @@ void* GetAvatar()
 static int vkfs_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
-
+    log_echo(string("vkfs_getattr start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
 	memset(stbuf, 0, sizeof(struct stat));
 	if (strcmp(path, "/") == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 1;
+		stbuf->st_nlink = 2;
 	} else if (strcmp(path, Info_dir) == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 1;
+		stbuf->st_nlink = 2;
 	} else if (strcmp(path, Msg_dir) == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+	} else if (strcmp(path, MyPhotos_dir_p) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+
+/*
+	} else if (strcmp(path, "/1") == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+
+
+	} else if (strcmp(path, "/1/2") == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 1;
+
+	} else if (strcmp(path, "/1/2/test") == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+        stbuf->st_size = 0;
+*/
+
+	} else if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+
+        string x=path+strlen(MyPhotos_dir_p)+1+strlen(MyPhotos_file_prefix);
+        int i=x.find(".");
+        if (x.find(".jpg")!=string::npos)
+        {
+            x.erase(i,4);
+            stbuf->st_size = session.GetNMiniPhotoSize(vklib::StrToInt(x)-1);
+        }
 	} else if (strcmp(path, MyInfo_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
@@ -175,7 +225,7 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	{
 		res = -ENOENT;
 	}
-
+    log_echo(string("vkfs_getattr end "),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
 	return res;
 }
 
@@ -183,27 +233,54 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
 //	if (strcmp(path, "/") != 0)
 //		return -ENOENT;
+    log_echo(string("vkfs_getdir start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
     int res = 0;
 //type?
     if (strcmp(path, "/") == 0)
     {
-        res=filler(h, ".", NULL);
-        res=filler(h, "..", NULL);
-        res=filler(h, Info_dir + 1, NULL);
-        res=filler(h, Msg_dir + 1, NULL);
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        res=filler(h, Info_dir + 1, NULL, 0);
+        res=filler(h, Msg_dir + 1, NULL, 0);
+        //res=filler(h, "1", NULL, 0);
     }else
     if (strcmp(path, Info_dir) == 0)
     {
-        res=filler(h, ".", NULL);
-        res=filler(h, "..", NULL);
-        res=filler(h, MyInfo_file, NULL);
-        res=filler(h, Wall_file, NULL);
-        res=filler(h, Avatar_file, NULL);
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        res=filler(h, MyPhotos_dir, NULL, 0);
+        res=filler(h, MyInfo_file, NULL, 0);
+        res=filler(h, Wall_file, NULL, 0);
+        res=filler(h, Avatar_file, NULL, 0);
+    }else
+    /*if (strcmp(path, "/1") == 0)
+    {
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        res=filler(h, "2", NULL, 0);
+    }else
+    if (strcmp(path, "/1/2") == 0)
+    {
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        res=filler(h, "test", NULL, 0);
+    }else*/
+    if (strcmp(path, MyPhotos_dir_p) == 0)
+    {
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        string x="";
+        for(int i=0;i<session.GetPhotosCount();i++)//
+        {
+            x=MyPhotos_file_prefix+IntToStr(i+1)+".jpg";
+            res=filler(h, x.c_str(), NULL, 0);
+        }
     }
+    log_echo(string("vkfs_getdir end"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
 	return res;
 }
 
-static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
+static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *)
 //		      struct fuse_file_info *fi)
 {
 	size_t len;
@@ -219,6 +296,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
 	} else
 		size = 0;
 */
+    log_echo(string("vkfs_read start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
 	if(strcmp(path, MyInfo_file_p) == 0)
 	{
         string ret=GetMyInfoText();
@@ -260,18 +338,55 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset)
             else size=0;
 	}
 
+    if (strncmp(path, MyPhotos_dir_p_f, strlen(MyPhotos_dir_p_f)) == 0)
+    {
+        string x=path;
+        if (x.find(".jpg")==string::npos)
+            return 0;
+
+        int i=x.find(MyPhotos_file_prefix)+strlen(MyPhotos_file_prefix);
+        x.erase(0,i);
+        i=x.find(".");
+        x.erase(i,4);
+        int num=vklib::StrToInt(x);
+        void* download;
+        int sz;
+        log_echo(string("vkfs_read download..."),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        vklib::RetrieveURL(&session.CachedFiles,session.GetNMiniPhotoURL(num-1),download,sz);
+        /*ofstream f("/home/roma/1.jpg");
+        f.write((char*)download,sz);*/
+
+        len = sz;
+        if (offset < len) {
+            if (offset + size > len)
+                size = len - offset;
+            memcpy(buf, download+offset, size);
+        } else
+            size = 0;
+
+    }
+    log_echo(string("vkfs_read end "),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
 	return size;
 }
 
-static int vkfs_open(const char *path, int fi)
+static int vkfs_open(const char *path, struct fuse_file_info* fi)
 {
 //	if (strcmp(path, hello_path) != 0)
 //		return -ENOENT;
-
-//	if ((fi->flags & 3) != O_RDONLY)
-//		return -EACCES;
-
+    log_echo(string("vkfs_open start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+	if ((fi->flags & 3) != O_RDONLY)
+		return -EACCES;
+    log_echo(string("vkfs_open end "),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
 	return 0;
+}
+
+int vkfs_opendir (const char *path, struct fuse_file_info *fi)
+{
+    log_echo(string("vkfs_opendir start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    if ((fi->flags & 3) != O_RDONLY)
+		return -EACCES;
+    log_echo(string("vkfs_opendir end"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    return 0;
 }
 
 static struct fuse_operations vkfs_opers;
@@ -282,6 +397,7 @@ int main(int argc, char* argv[])
 	vkfs_opers.getdir	= vkfs_getdir;
 	vkfs_opers.open		= vkfs_open;
 	vkfs_opers.read		= vkfs_read;
+	vkfs_opers.opendir	= vkfs_opendir;
     cout<<"e-mail:";
     cin>>email;
     cout<<"password:";
@@ -290,5 +406,5 @@ int main(int argc, char* argv[])
     session.RetrievePersonalInfo();
     vkid=session.GetVkontakteID();
     cout<<"Your ID: "<<vkid<<"\n";
-    return fuse_main(argc, argv, &vkfs_opers);
+    return fuse_main(argc, argv, &vkfs_opers, NULL);
 }

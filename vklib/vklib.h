@@ -1,10 +1,22 @@
+#ifndef VKLIB_H
+#define VKLIB_H
+
 #include <string.h>
+#include <vector>
 #include "json/reader.h"
 #include "json/writer.h"
 #include "json/elements.h"
 
 namespace vklib
 {
+    struct FileCacheStruct
+    {
+        std::string url;
+        time_t time;
+        void* ptr;
+        int size;
+    };
+
     class VKObject
     {
     public:
@@ -28,11 +40,17 @@ namespace vklib
         std::string GetProfileImagePath();
         int GetAvatarSize();
         int RetreiveAvatar();
+        int GetPhotosCount();
+        std::string GetNPhotoURL(int n);
+        std::string GetNMiniPhotoURL(int n);
+        int GetNPhotoSize(int n);
+        int GetNMiniPhotoSize(int n);
 
         std::string sid;
         std::string remixpassword;
         void* avatar;
         int avatarsize;
+        std::vector<FileCacheStruct> CachedFiles;
     private:
         json::Object profile;
     };
@@ -55,4 +73,9 @@ namespace vklib
         VKObject* sess;
     };
 
+std::string IntToStr(int i);
+int StrToInt (const std::string &str);
+void RetrieveURL(std::vector<FileCacheStruct>* CachedFiles,std::string url, void*& buff, int& size);
 }
+
+#endif

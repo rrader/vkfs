@@ -8,8 +8,27 @@
 
 #include "vklib.h"
 
+
 namespace vklib
 {
+
+std::string IntToStr(int i)
+{
+    std::string str;
+    std::stringstream stream;
+    stream << i;
+    //str = ;
+    return stream.str();
+}
+
+int StrToInt (const std::string &str)
+{
+    std::stringstream ss(str);
+    int n;
+    ss >> n;
+    return n;
+}
+
 
 using namespace cURLpp;
 using namespace Options;
@@ -20,23 +39,6 @@ std::string RequestAnswer;
 void* m_pBuffer;
 int m_BufferSize;
 
-string IntToStr(int i)
-{
-    string str;
-    stringstream stream;
-    stream << i;
-    //str = ;
-    return stream.str();
-}
-
-int StrToInt (const string &str)
-{
-    stringstream ss(str);
-    int n;
-    ss >> n;
-    return n;
-}
-
 size_t WriteStringCallback(char* ptr, size_t size, size_t nmemb)
 {
     RequestAnswer += ptr;
@@ -46,22 +48,16 @@ size_t WriteStringCallback(char* ptr, size_t size, size_t nmemb)
 
 size_t WriteMemoryCallback(char* ptr, size_t size, size_t nmemb)
 {
-  // Calculate the real size of the incoming buffer
-  size_t realsize = size * nmemb;
+    size_t realsize = size * nmemb;
+    m_pBuffer = (char*) realloc(m_pBuffer, m_BufferSize + realsize);
 
-  // (Re)Allocate memory for the buffer
-  m_pBuffer = (char*) realloc(m_pBuffer, m_BufferSize + realsize);
+    if (m_pBuffer == NULL) {
+        realsize = 0;
+    }
 
-  // Test if Buffer is initialized correctly & copy memory
-  if (m_pBuffer == NULL) {
-    realsize = 0;
-  }
-
-  memcpy((m_pBuffer+m_BufferSize), ptr, realsize);
-  m_BufferSize += realsize;
-
-  // return the real size of the buffer...
-  return realsize;
+    memcpy((m_pBuffer+m_BufferSize), ptr, realsize);
+    m_BufferSize += realsize;
+    return realsize;
 };
 
 int VKObject::Login(std::string EMail,std::string Passwd)
@@ -125,13 +121,34 @@ int CheckResponse(VKObject& session,std::string rp)
     return 0;
 }
 
-int VKObject::GetAvatarSize()
+int GetURLFileSize(vector<FileCacheStruct>* CachedFiles,string URL)
 {
+    if (CachedFiles!=NULL)
+    {
+        vector<FileCacheStruct>::iterator it;
+        it = CachedFiles->begin();
+        while( it != CachedFiles->end() )
+        {
+            if (strcmp(it->url.c_str(),URL.c_str())==0)
+            {
+                if (time (NULL)-it->time<600)
+                {
+                    return it->size;
+                }else
+                {
+                    delete it->ptr;
+                    CachedFiles->erase(it);
+                    break;
+                }
+            }
+            it++;
+        }
+    }
     Easy* request=new Easy;
     WriteFunctionFunctor functor(WriteStringCallback);
     WriteFunction* cb = new curlpp::options::WriteFunction(functor);
     request->setOpt(cb);
-    request->setOpt(Url(GetProfileImagePath()));
+    request->setOpt(Url(URL));
     request->setOpt(HttpGet(true));
     request->setOpt(NoBody(true));
     request->setOpt(Header(true));
@@ -140,37 +157,95 @@ int VKObject::GetAvatarSize()
     request->perform();
     delete request;
 
-    if (CheckResponse(*this,RequestAnswer)!=0)
-    {
-        return GetAvatarSize();
-    }
-    cout<<RequestAnswer;
     int is=RequestAnswer.find("Content-Length:");
     is=RequestAnswer.find(" ",is+1)+1;
     int i=is;
     string x="";
     while ((RequestAnswer[i]!='\xD')and(RequestAnswer[i]!='\xA')and(RequestAnswer[i]!='\n'))
         x+=RequestAnswer[i++];
+
+    if (CachedFiles!=NULL)
+    {
+        FileCacheStruct fcs;
+        fcs.ptr=NULL;
+        fcs.time=time(NULL);
+        fcs.url=URL;
+        fcs.size=StrToInt(x);
+        CachedFiles->push_back(fcs);
+    }
     return StrToInt(x);
 }
 
-int VKObject::RetreiveAvatar()
+int VKObject::GetAvatarSize()
 {
+    return GetURLFileSize(&CachedFiles,GetProfileImagePath());
+}
+
+void RetrieveURL(vector<FileCacheStruct>* CachedFiles,string url, void*& buff, int& size)
+{
+    string u="echo ";
+    u+=url+">> /home/roma/curl.txt";
+    system(u.c_str());
+    if (CachedFiles!=NULL)
+    {
+        vector<FileCacheStruct>::iterator it;
+        it = CachedFiles->begin();
+        while( it != CachedFiles->end() )
+        {
+            if (it->url.compare(url)==0)
+            {
+                    string u="echo \"Cached:";
+                    u+=it->url+"\" >> /home/roma/curl.txt";
+                    system(u.c_str());
+                if (time (NULL)-it->time<600)
+                {
+                    if (it->ptr!=NULL)
+                    {
+                        size=it->size;
+                        buff=it->ptr;
+                        return;
+                    }else
+                        break;
+                }else
+                {
+                    delete it->ptr;
+                    CachedFiles->erase(it);
+                    break;
+                }
+            }
+            it++;
+        }
+        ;
+    }
     Easy* request=new Easy;
     WriteFunctionFunctor functor(WriteMemoryCallback);
     WriteFunction* cb = new curlpp::options::WriteFunction(functor);
     request->setOpt(cb);
-    request->setOpt(Url(GetProfileImagePath()));
+    request->setOpt(Url(url));
     request->setOpt(HttpGet(true));
     request->setOpt(Header(false));
     request->setOpt(MaxRedirs(0));
-    RequestAnswer="";
+    m_BufferSize=0;
+    m_pBuffer=NULL;
     request->perform();
     delete request;
 
-    avatarsize=m_BufferSize;
-    avatar=m_pBuffer;
+    size=m_BufferSize;
+    buff=m_pBuffer;
+    if (CachedFiles!=NULL)
+    {
+        FileCacheStruct fcs;
+        fcs.ptr=buff;
+        fcs.time=time(NULL);
+        fcs.url=url;
+        fcs.size=size;
+        CachedFiles->push_back(fcs);
+    }
+}
 
+int VKObject::RetreiveAvatar()
+{
+    RetrieveURL(&CachedFiles,GetProfileImagePath(),avatar,avatarsize);
     return avatarsize;
 }
 
@@ -183,6 +258,16 @@ inline std::string replacestr(std::string text, std::string s, std::string d)
     index+=d.length();
   }
   return text;
+}
+
+int VKObject::GetNPhotoSize(int n)
+{
+    return GetURLFileSize(&CachedFiles,GetNPhotoURL(n));
+}
+
+int VKObject::GetNMiniPhotoSize(int n)
+{
+    return GetURLFileSize(&CachedFiles,GetNMiniPhotoURL(n));
 }
 
 int VKObject::RetrievePersonalInfo()
@@ -200,6 +285,8 @@ int VKObject::RetrievePersonalInfo()
     request->setOpt(MaxRedirs(0));
     RequestAnswer="";
     request->perform();
+    time_t x=time(NULL);
+    while (time(NULL)-x<1);
     delete request;
     if (CheckResponse(*this,RequestAnswer)!=0)
     {
@@ -209,11 +296,19 @@ int VKObject::RetrievePersonalInfo()
 
 
     while (RequestAnswer[i--]!='}');
-    RequestAnswer.erase(i+2,RequestAnswer.size()-i);
+    RequestAnswer.erase(i+2,RequestAnswer.size()-i+1);
     RequestAnswer=replacestr(RequestAnswer,"\\/","/");
+    RequestAnswer=replacestr(RequestAnswer,"\\t","\t");
+    cout<<RequestAnswer;
     std::stringstream stream(RequestAnswer);
     profile.Clear();
-    json::Reader::Read(profile, stream);
+    try
+    {
+      json::Reader::Read(profile, stream);
+    }catch(...)
+    {
+        RetrievePersonalInfo();
+    }
     return 0;
 }
 
@@ -225,6 +320,21 @@ int VKObject::GetVkontakteID()
 string VKObject::GetProfileImagePath()
 {
     return ((json::String&)(profile["bp"])).Value();
+}
+
+int VKObject::GetPhotosCount()
+{
+    return ((json::Number&)(profile["ph"]["n"])).Value();
+}
+
+string VKObject::GetNPhotoURL(int n)
+{
+    return ((json::String&)(profile["ph"]["d"][n][2])).Value();
+}
+
+string VKObject::GetNMiniPhotoURL(int n)
+{
+    return ((json::String&)(profile["ph"]["d"][n][1])).Value();
 }
 
 string VKObject::GetFirstName()
