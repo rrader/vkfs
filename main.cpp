@@ -360,7 +360,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         if (offset < len) {
             if (offset + size > len)
                 size = len - offset;
-            memcpy(buf, download+offset, size);
+            memcpy(buf, (char*)download+offset, size);
         } else
             size = 0;
 
