@@ -270,6 +270,15 @@ int VKObject::GetNMiniPhotoSize(int n)
     return GetURLFileSize(&CachedFiles,GetNMiniPhotoURL(n));
 }
 
+void ProcessLongJSON(string& s)
+{
+    int i=s.size();
+    while (s[i--]!='}');
+    s.erase(i+2,s.size()-i+1);
+    s=replacestr(s,"\\/","/");
+    s=replacestr(s,"\\t","\t");
+}
+
 int VKObject::RetrievePersonalInfo()
 {
     Easy* request=new Easy;
@@ -292,13 +301,9 @@ int VKObject::RetrievePersonalInfo()
     {
         return RetrievePersonalInfo();
     }
-    int i=RequestAnswer.size();
 
+    ProcessLongJSON(RequestAnswer);
 
-    while (RequestAnswer[i--]!='}');
-    RequestAnswer.erase(i+2,RequestAnswer.size()-i+1);
-    RequestAnswer=replacestr(RequestAnswer,"\\/","/");
-    RequestAnswer=replacestr(RequestAnswer,"\\t","\t");
     //cout<<RequestAnswer;
     std::stringstream stream(RequestAnswer);
     profile.Clear();
@@ -524,9 +529,18 @@ int VKPMReader::Retrieve(VKObject& session,int uid,int from, int to)
     {
         return Retrieve(session,uid,from,to);
     }
-    std::stringstream stream(RequestAnswer);
-    jsonresponse.Clear();
-    json::Reader::Read(jsonresponse, stream);
+
+    try
+    {
+        ProcessLongJSON(RequestAnswer);
+
+        std::stringstream stream(RequestAnswer);
+        jsonresponse.Clear();
+        json::Reader::Read(jsonresponse, stream);
+    }catch(...)
+    {
+        Retrieve(session,uid,from,to);
+    }
     delete wall;
 }
 

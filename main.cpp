@@ -42,11 +42,10 @@ const char *Messages_file_prefix = "Message_";
 
 const int   Messages_Maximum = 25;
 #define     GetMsgCountInDirectory(A) (((A)>Messages_Maximum)?(Messages_Maximum):(A))
-
+//#define     GetMsgCountInDirectory(A) (A)
 vklib::VKObject session;
 vklib::VKPMReader pminbox(vklib::VKPM_InboxAct);
 vklib::VKPMReader pmoutbox(vklib::VKPM_OutboxAct);
-time_t PMUpdate;
 
 string email;
 string passwd;
@@ -82,15 +81,15 @@ string IntToStr(int i)
 string GetPMnText(vklib::VKPMReader& pm, int n)
 {
     return string("От: ")+
-        pminbox.GetMessageSenderName(n-1)+"\nДля: "+((pminbox.GetMessageReceiverID(n-1)!=0)?(pminbox.GetMessageReceiverName(n-1)):(string("адресовано Вам")))+
-            "\n----------------------------\n"+pminbox.GetMessageText(n-1);
+        ((pm.GetMessageSenderID(n-1)!=0)?(pm.GetMessageSenderName(n-1)):(string("Вас")))+"\nКому: "+((pm.GetMessageReceiverID(n-1)!=0)?(pm.GetMessageReceiverName(n-1)):(string("адресовано Вам")))+
+            "\n----------------------------\n"+pm.GetMessageText(n-1);
 }
 
 void GetPrivateMessages(vklib::VKPMReader& pm)
 {
     time_t now = time (NULL);
 
-    if (now-PMUpdate>60)
+    if (now-pm.PMUpdate>60)
     {
         log_echo(string("GetPrivateMessages 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
         pm.Retrieve(session,0,0,1);
@@ -98,7 +97,7 @@ void GetPrivateMessages(vklib::VKPMReader& pm)
         int count=GetMsgCountInDirectory(pm.MessageCount());
         pm.Retrieve(session,0,0,count);
         log_echo(string("GetPrivateMessages 3"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
-        PMUpdate=time(NULL);
+        pm.PMUpdate=time(NULL);
     }
 }
 
@@ -212,6 +211,10 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
+	} else if (strcmp(path, MsgOutbox_dir_p) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
 	} else if (strcmp(path, MyPhotos_dir_p) == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
@@ -250,6 +253,19 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
             stbuf->st_size = GetPMnText(pminbox,vklib::StrToInt(x)).size()+1;
             log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
         }
+
+	} else if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+        GetPrivateMessages(pmoutbox);
+        string x=path+strlen(MsgOutbox_dir_p)+1+strlen(Messages_file_prefix);
+        int i=x.find(".");
+        if (string(path).find(Messages_file_prefix)!=string::npos)
+        {
+            x.erase(i,4);
+            stbuf->st_size = GetPMnText(pmoutbox,vklib::StrToInt(x)).size()+1;
+        }
+
 
 	} else if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
@@ -345,6 +361,22 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         }
     }
 
+    if (strcmp(path, MsgOutbox_dir_p) == 0)
+    {
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        GetPrivateMessages(pmoutbox);
+        log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        string x="";
+        int count=GetMsgCountInDirectory(pmoutbox.MessageCount());
+        for(int i=0;i<count;i++)
+        {
+            x=Messages_file_prefix+IntToStr(i+1)+".txt";
+            res=filler(h, x.c_str(), NULL, 0);
+        }
+    }
+
     if (strcmp(path, MyPhotos_dir_p) == 0)
     {
         res=filler(h, ".", NULL, 0);
@@ -431,6 +463,29 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         int num=vklib::StrToInt(x);
 
         string ret=GetPMnText(pminbox,num);
+	    len = ret.size();
+
+	    if (offset < len)
+	    {
+            size=len;
+            memcpy(buf, ret.c_str() , size);
+	    }
+            else size=0;
+    }
+
+    if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0)
+    {
+        string x=path;
+        if (string(path).find(Messages_file_prefix)==string::npos)
+            return 0;
+
+        int i=x.find(Messages_file_prefix)+strlen(Messages_file_prefix);
+        x.erase(0,i);
+        i=x.find(".");
+        x.erase(i,4);
+        int num=vklib::StrToInt(x);
+
+        string ret=GetPMnText(pmoutbox,num);
 	    len = ret.size();
 
 	    if (offset < len)

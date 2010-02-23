@@ -94,6 +94,7 @@ namespace vklib
         int GetMessageReceiverID(int n);
         std::string GetMessageReceiverName(int n);
         json::Object jsonresponse;
+        time_t PMUpdate;
     private:
         VKObject* sess;
         std::string acttype;
