@@ -312,6 +312,7 @@ int VKObject::RetrievePersonalInfo()
       json::Reader::Read(profile, stream);
     }catch(...)
     {
+        cerr<<"Trying...";
         RetrievePersonalInfo();
     }
     return 0;
@@ -539,6 +540,7 @@ int VKPMReader::Retrieve(VKObject& session,int uid,int from, int to)
         json::Reader::Read(jsonresponse, stream);
     }catch(...)
     {
+        cerr<<"Trying...";
         Retrieve(session,uid,from,to);
     }
     delete wall;
