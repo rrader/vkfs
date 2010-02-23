@@ -299,7 +299,7 @@ int VKObject::RetrievePersonalInfo()
     RequestAnswer.erase(i+2,RequestAnswer.size()-i+1);
     RequestAnswer=replacestr(RequestAnswer,"\\/","/");
     RequestAnswer=replacestr(RequestAnswer,"\\t","\t");
-    cout<<RequestAnswer;
+    //cout<<RequestAnswer;
     std::stringstream stream(RequestAnswer);
     profile.Clear();
     try
@@ -407,7 +407,7 @@ string VKObject::GetMiddleName()
     return ((json::String&)(profile["mn"])).Value();
 }
 
-int VKWallReader::RetrieveWall(VKObject& session,int uid,int from, int to)
+int VKWallReader::Retrieve(VKObject& session,int uid,int from, int to)
 {
     sess=&session;
     Easy* wall=new Easy;
@@ -430,7 +430,7 @@ int VKWallReader::RetrieveWall(VKObject& session,int uid,int from, int to)
     wall->perform();
     if (CheckResponse(*sess,RequestAnswer)!=0)
     {
-        return RetrieveWall(session,uid,from,to);
+        return Retrieve(session,uid,from,to);
     }
     std::stringstream stream(RequestAnswer);
     jsonresponse.Clear();
@@ -477,6 +477,110 @@ string VKWallReader::GetMessageSenderName(int n)
 {
     json::Array& d=jsonresponse["d"];
     return ((json::String&)(d[n][3][1])).Value();
+}
+
+int VKWallReader::GetMessageReceiverID(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::Number&)(d[n][4][0])).Value();
+}
+
+string VKWallReader::GetMessageReceiverName(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::String&)(d[n][4][1])).Value();
+}
+
+
+// PM
+
+VKPMReader::VKPMReader(const char* act)
+{
+    acttype=act;
+}
+
+int VKPMReader::Retrieve(VKObject& session,int uid,int from, int to)
+{
+    sess=&session;
+    Easy* wall=new Easy;
+    WriteFunctionFunctor functor(WriteStringCallback);
+    WriteFunction* cb = new curlpp::options::WriteFunction(functor);
+    wall->setOpt(cb);
+    wall->setOpt(Url("http://userapi.com/data"));
+    wall->setOpt(Post(true));
+    wall->setOpt(Header(false));
+
+    std::string fields=session.sid+"&act="+acttype+"&";
+    if (uid!=0)
+    {
+        fields+="id="+IntToStr(uid)+"&";
+    }
+    fields+="from="+IntToStr(from)+"&to="+IntToStr(to);
+
+    wall->setOpt(PostFields(fields));
+    RequestAnswer="";
+    wall->perform();
+    if (CheckResponse(*sess,RequestAnswer)!=0)
+    {
+        return Retrieve(session,uid,from,to);
+    }
+    std::stringstream stream(RequestAnswer);
+    jsonresponse.Clear();
+    json::Reader::Read(jsonresponse, stream);
+    delete wall;
+}
+
+int VKPMReader::MessageCount()
+{
+    return ((json::Number&)(jsonresponse["n"])).Value();
+}
+
+int VKPMReader::GetMessageID(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::Number&)(d[n][0])).Value();
+}
+
+int VKPMReader::GetMessageTime(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::Number&)(d[n][1])).Value();
+}
+
+string VKPMReader::GetMessageText(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::String&)(d[n][2][0])).Value();
+}
+
+int VKPMReader::GetMessageType(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::Number&)(d[n][2][1])).Value();
+}
+
+int VKPMReader::GetMessageSenderID(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::Number&)(d[n][3][0])).Value();
+}
+
+string VKPMReader::GetMessageSenderName(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::String&)(d[n][3][1])).Value();
+}
+
+int VKPMReader::GetMessageReceiverID(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::Number&)(d[n][4][0])).Value();
+}
+
+string VKPMReader::GetMessageReceiverName(int n)
+{
+    json::Array& d=jsonresponse["d"];
+    return ((json::String&)(d[n][4][1])).Value();
 }
 
 }

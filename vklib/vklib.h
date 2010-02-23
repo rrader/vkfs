@@ -60,7 +60,7 @@ namespace vklib
     class VKWallReader
     {
     public:
-        int RetrieveWall(VKObject& session,int uid,int from, int to);
+        int Retrieve(VKObject& session,int uid,int from, int to);
         int MessageCount();
         int GetMessageID(int n);
         int GetMessageTime(int n);
@@ -68,9 +68,35 @@ namespace vklib
         std::string GetMessageText(int n);
         int GetMessageSenderID(int n);
         std::string GetMessageSenderName(int n);
+        int GetMessageReceiverID(int n);
+        std::string GetMessageReceiverName(int n);
         json::Object jsonresponse;
     private:
         VKObject* sess;
+    };
+
+    static const char* VKPM_InboxAct="inbox";
+    static const char* VKPM_OutboxAct="outbox";
+    static const char* VKPM_MessagesAct="message";
+
+    class VKPMReader
+    {
+    public:
+        VKPMReader(const char* act);
+        int Retrieve(VKObject& session,int uid,int from, int to);
+        int MessageCount();
+        int GetMessageID(int n);
+        int GetMessageTime(int n);
+        int GetMessageType(int n);
+        std::string GetMessageText(int n);
+        int GetMessageSenderID(int n);
+        std::string GetMessageSenderName(int n);
+        int GetMessageReceiverID(int n);
+        std::string GetMessageReceiverName(int n);
+        json::Object jsonresponse;
+    private:
+        VKObject* sess;
+        std::string acttype;
     };
 
 std::string IntToStr(int i);

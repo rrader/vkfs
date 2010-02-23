@@ -34,8 +34,20 @@ const char *Avatar_file = "avatar.jpg";
 
 
 const char *Msg_dir = "/Messages";
+const char *MsgInbox_dir_p = "/Messages/Inbox";
+const char *MsgInbox_dir = "Inbox";
+const char *MsgOutbox_dir_p = "/Messages/Outbox";
+const char *MsgOutbox_dir = "Outbox";
+const char *Messages_file_prefix = "Message_";
+
+const int   Messages_Maximum = 25;
+#define     GetMsgCountInDirectory(A) (((A)>Messages_Maximum)?(Messages_Maximum):(A))
 
 vklib::VKObject session;
+vklib::VKPMReader pminbox(vklib::VKPM_InboxAct);
+vklib::VKPMReader pmoutbox(vklib::VKPM_OutboxAct);
+time_t PMUpdate;
+
 string email;
 string passwd;
 int vkid;
@@ -67,6 +79,29 @@ string IntToStr(int i)
     return stream.str();
 }
 
+string GetPMnText(vklib::VKPMReader& pm, int n)
+{
+    return string("От: ")+
+        pminbox.GetMessageSenderName(n-1)+"\nДля: "+((pminbox.GetMessageReceiverID(n-1)!=0)?(pminbox.GetMessageReceiverName(n-1)):(string("адресовано Вам")))+
+            "\n----------------------------\n"+pminbox.GetMessageText(n-1);
+}
+
+void GetPrivateMessages(vklib::VKPMReader& pm)
+{
+    time_t now = time (NULL);
+
+    if (now-PMUpdate>60)
+    {
+        log_echo(string("GetPrivateMessages 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        pm.Retrieve(session,0,0,1);
+        log_echo(string("GetPrivateMessages 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        int count=GetMsgCountInDirectory(pm.MessageCount());
+        pm.Retrieve(session,0,0,count);
+        log_echo(string("GetPrivateMessages 3"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        PMUpdate=time(NULL);
+    }
+}
+
 string GetWallText()
 {
     time_t now = time (NULL);
@@ -74,7 +109,7 @@ string GetWallText()
     if (now-WallTextUpdate>60)
     {
         vklib::VKWallReader wall;
-        wall.RetrieveWall(session,vkid,0,10);
+        wall.Retrieve(session,vkid,0,10);
         string ret="Всего сообщений: "+IntToStr(wall.MessageCount())+'\n';
         ret+="Сообщения 1-10:\n\n";
         for (int i=0;i<10;i++)
@@ -173,6 +208,10 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
+	} else if (strcmp(path, MsgInbox_dir_p) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
 	} else if (strcmp(path, MyPhotos_dir_p) == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
@@ -195,6 +234,22 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_nlink = 1;
         stbuf->st_size = 0;
 */
+	} else if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0) {
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+        log_echo(string("vkfs_getattr 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        GetPrivateMessages(pminbox);
+        log_echo(string("vkfs_getattr 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        string x=path+strlen(MsgInbox_dir_p)+1+strlen(Messages_file_prefix);
+        int i=x.find(".");
+        log_echo(string("vkfs_getattr 3"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        if (string(path).find(Messages_file_prefix)!=string::npos)
+        {
+            log_echo(string("vkfs_getattr 4"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+            x.erase(i,4);
+            stbuf->st_size = GetPMnText(pminbox,vklib::StrToInt(x)).size()+1;
+            log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        }
 
 	} else if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
@@ -265,6 +320,31 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, "..", NULL, 0);
         res=filler(h, "test", NULL, 0);
     }else*/
+
+    if (strcmp(path, Msg_dir) == 0)
+    {
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        res=filler(h, MsgInbox_dir, NULL, 0);
+        res=filler(h, MsgOutbox_dir, NULL, 0);
+    }
+
+    if (strcmp(path, MsgInbox_dir_p) == 0)
+    {
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+        log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        GetPrivateMessages(pminbox);
+        log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        string x="";
+        int count=GetMsgCountInDirectory(pminbox.MessageCount());
+        for(int i=0;i<count;i++)
+        {
+            x=Messages_file_prefix+IntToStr(i+1)+".txt";
+            res=filler(h, x.c_str(), NULL, 0);
+        }
+    }
+
     if (strcmp(path, MyPhotos_dir_p) == 0)
     {
         res=filler(h, ".", NULL, 0);
@@ -338,10 +418,33 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
             else size=0;
 	}
 
-    if (strncmp(path, MyPhotos_dir_p_f, strlen(MyPhotos_dir_p_f)) == 0)
+    if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0)
     {
         string x=path;
-        if (x.find(".jpg")==string::npos)
+        if (string(path).find(Messages_file_prefix)==string::npos)
+            return 0;
+
+        int i=x.find(Messages_file_prefix)+strlen(Messages_file_prefix);
+        x.erase(0,i);
+        i=x.find(".");
+        x.erase(i,4);
+        int num=vklib::StrToInt(x);
+
+        string ret=GetPMnText(pminbox,num);
+	    len = ret.size();
+
+	    if (offset < len)
+	    {
+            size=len;
+            memcpy(buf, ret.c_str() , size);
+	    }
+            else size=0;
+    }
+
+    if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0)
+    {
+        string x=path;
+        if (string(path).find(MyPhotos_file_prefix)==string::npos)
             return 0;
 
         int i=x.find(MyPhotos_file_prefix)+strlen(MyPhotos_file_prefix);
