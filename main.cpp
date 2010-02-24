@@ -136,7 +136,13 @@ string GetMyInfoText()
         ret+="Статус: "+session.GetStatus()+"\n\n";
         ret+="Местоположение: "+session.GetCountryName()+", "+session.GetCityName()+"\n";
         ret+="Дата рождения: "+IntToStr(session.GetUserBirdthDay())+"."+IntToStr(session.GetUserBirdthMonth())+"."+IntToStr(session.GetUserBirdthYear())+"\n";
-        ret+="Город рождения: "+session.GetBirdthCityName()+"\n";
+        ret+="Пол: ";
+        switch (session.GetSex()) 
+        {
+            case 1:ret+="Женский";break;
+            case 2:ret+="Мужской";break;
+        }
+        ret+="\nГород рождения: "+session.GetBirdthCityName()+"\n";
         ret+="Семейное положение: ";
         switch (session.GetMaritalStatus())
         {

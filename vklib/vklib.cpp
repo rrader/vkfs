@@ -353,6 +353,11 @@ string VKObject::GetLastName()
     return ((json::String&)(profile["ln"])).Value();
 }
 
+int VKObject::GetSex()
+{
+    return ((json::Number&)(profile["sx"])).Value();
+}
+
 string VKObject::GetStatus()
 {
     return ((json::String&)(profile["actv"]["5"])).Value();
