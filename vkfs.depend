@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1266956403 source:/home/roma/projects/vkfs/main.cpp
+1267028113 source:/home/roma/projects/vkfs/main.cpp
 	<stdlib.h>
 	<string.h>
 	<errno.h>
@@ -56,7 +56,7 @@
 	<iostream>
 	<iomanip>
 
-1266956058 source:/home/roma/projects/vkfs/vklib/vklib.cpp
+1267027987 source:/home/roma/projects/vkfs/vklib/vklib.cpp
 	<iostream>
 	<curlpp/cURLpp.hpp>
 	<curlpp/Easy.hpp>

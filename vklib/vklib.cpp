@@ -69,7 +69,7 @@ int VKObject::Login(std::string EMail,std::string Passwd)
     request->setOpt(Url("http://login.userapi.com/auth"));
     request->setOpt(Post(true));
 
-    request->setOpt(PostFields("login=force&site=5323&email="+EMail+"&pass="+Passwd));
+    request->setOpt(PostFields("login=force&site=2&email="+EMail+"&pass="+Passwd));
 
     request->setOpt(Header(true));
     request->setOpt(MaxRedirs(0));

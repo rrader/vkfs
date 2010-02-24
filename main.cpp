@@ -1,3 +1,5 @@
+#define log_file "/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt"
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -91,12 +93,12 @@ void GetPrivateMessages(vklib::VKPMReader& pm)
 
     if (now-pm.PMUpdate>60)
     {
-        log_echo(string("GetPrivateMessages 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("GetPrivateMessages 1"),log_file);
         pm.Retrieve(session,0,0,1);
-        log_echo(string("GetPrivateMessages 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("GetPrivateMessages 2"),log_file);
         int count=GetMsgCountInDirectory(pm.MessageCount());
         pm.Retrieve(session,0,0,count);
-        log_echo(string("GetPrivateMessages 3"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("GetPrivateMessages 3"),log_file);
         pm.PMUpdate=time(NULL);
     }
 }
@@ -138,24 +140,24 @@ string GetMyInfoText()
         ret+="Семейное положение: ";
         switch (session.GetMaritalStatus())
         {
-            case 1:ret+="Не женат";
-            case 2:ret+="Есть подруга";
-            case 3:ret+="Обручен";
-            case 4:ret+="Женат";
-            case 5:ret+="Всё сложно";
-            case 6:ret+="В активном поиске";
+            case 1:ret+="Не женат"; break;
+            case 2:ret+="Есть подруга"; break;
+            case 3:ret+="Обручен";  break;
+            case 4:ret+="Женат"; break;
+            case 5:ret+="Всё сложно"; break;
+            case 6:ret+="В активном поиске"; break;
         }
         ret+="\nПолитические взгляды: ";
         switch (session.GetPoliticalStatus())
         {
-            case 1:ret+="коммунистические";
-            case 2:ret+="социалистические";
-            case 3:ret+="умеренные";
-            case 4:ret+="либеральные";
-            case 5:ret+="консервативные";
-            case 6:ret+="монархические";
-            case 7:ret+="ультраконсервативные";
-            case 8:ret+="индифферентные";
+            case 1:ret+="коммунистические"; break;
+            case 2:ret+="социалистические"; break;
+            case 3:ret+="умеренные"; break;
+            case 4:ret+="либеральные"; break;
+            case 5:ret+="консервативные"; break;
+            case 6:ret+="монархические"; break;
+            case 7:ret+="ультраконсервативные"; break;
+            case 8:ret+="индифферентные"; break;
         }
         ret+="\n";
 
@@ -193,7 +195,7 @@ void* GetAvatar()
 static int vkfs_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
-    log_echo(string("vkfs_getattr start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_getattr start: ")+path,log_file);
 	memset(stbuf, 0, sizeof(struct stat));
 	if (strcmp(path, "/") == 0)
 	{
@@ -240,18 +242,18 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	} else if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-        log_echo(string("vkfs_getattr 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getattr 1"),log_file);
         GetPrivateMessages(pminbox);
-        log_echo(string("vkfs_getattr 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getattr 2"),log_file);
         string x=path+strlen(MsgInbox_dir_p)+1+strlen(Messages_file_prefix);
         int i=x.find(".");
-        log_echo(string("vkfs_getattr 3"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getattr 3"),log_file);
         if (string(path).find(Messages_file_prefix)!=string::npos)
         {
-            log_echo(string("vkfs_getattr 4"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+            log_echo(string("vkfs_getattr 4"),log_file);
             x.erase(i,4);
             stbuf->st_size = GetPMnText(pminbox,vklib::StrToInt(x)).size()+1;
-            log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+            log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),log_file);
         }
 
 	} else if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0) {
@@ -296,7 +298,7 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	{
 		res = -ENOENT;
 	}
-    log_echo(string("vkfs_getattr end "),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_getattr end "),log_file);
 	return res;
 }
 
@@ -304,7 +306,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
 //	if (strcmp(path, "/") != 0)
 //		return -ENOENT;
-    log_echo(string("vkfs_getdir start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_getdir start: ")+path,log_file);
     int res = 0;
 //type?
     if (strcmp(path, "/") == 0)
@@ -349,9 +351,9 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     {
         res=filler(h, ".", NULL, 0);
         res=filler(h, "..", NULL, 0);
-        log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),log_file);
         GetPrivateMessages(pminbox);
-        log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),log_file);
         string x="";
         int count=GetMsgCountInDirectory(pminbox.MessageCount());
         for(int i=0;i<count;i++)
@@ -365,9 +367,9 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     {
         res=filler(h, ".", NULL, 0);
         res=filler(h, "..", NULL, 0);
-        log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),log_file);
         GetPrivateMessages(pmoutbox);
-        log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),log_file);
         string x="";
         int count=GetMsgCountInDirectory(pmoutbox.MessageCount());
         for(int i=0;i<count;i++)
@@ -388,7 +390,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
             res=filler(h, x.c_str(), NULL, 0);
         }
     }
-    log_echo(string("vkfs_getdir end"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_getdir end"),log_file);
 	return res;
 }
 
@@ -408,7 +410,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
 	} else
 		size = 0;
 */
-    log_echo(string("vkfs_read start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_read start: ")+path,log_file);
 	if(strcmp(path, MyInfo_file_p) == 0)
 	{
         string ret=GetMyInfoText();
@@ -509,7 +511,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         int num=vklib::StrToInt(x);
         void* download;
         int sz;
-        log_echo(string("vkfs_read download..."),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+        log_echo(string("vkfs_read download..."),log_file);
         vklib::RetrieveURL(&session.CachedFiles,session.GetNMiniPhotoURL(num-1),download,sz);
         /*ofstream f("/home/roma/1.jpg");
         f.write((char*)download,sz);*/
@@ -523,7 +525,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
             size = 0;
 
     }
-    log_echo(string("vkfs_read end "),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_read end "),log_file);
 	return size;
 }
 
@@ -531,19 +533,19 @@ static int vkfs_open(const char *path, struct fuse_file_info* fi)
 {
 //	if (strcmp(path, hello_path) != 0)
 //		return -ENOENT;
-    log_echo(string("vkfs_open start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_open start: ")+path,log_file);
 	if ((fi->flags & 3) != O_RDONLY)
 		return -EACCES;
-    log_echo(string("vkfs_open end "),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_open end "),log_file);
 	return 0;
 }
 
 int vkfs_opendir (const char *path, struct fuse_file_info *fi)
 {
-    log_echo(string("vkfs_opendir start: ")+path,"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_opendir start: ")+path,log_file);
     if ((fi->flags & 3) != O_RDONLY)
 		return -EACCES;
-    log_echo(string("vkfs_opendir end"),"/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt");
+    log_echo(string("vkfs_opendir end"),log_file);
     return 0;
 }
 
