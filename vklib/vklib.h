@@ -7,6 +7,8 @@
 #include "json/writer.h"
 #include "json/elements.h"
 
+#define log_file "/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt"
+
 namespace vklib
 {
     struct FileCacheStruct
@@ -42,6 +44,8 @@ namespace vklib
         std::string GetProfileImagePath();
         int GetAvatarSize();
         int RetreiveAvatar();
+
+        //Photos
         int GetPhotosCount();
         std::string GetNPhotoURL(int n);
         std::string GetNMiniPhotoURL(int n);
@@ -53,8 +57,8 @@ namespace vklib
         void* avatar;
         int avatarsize;
         std::vector<FileCacheStruct> CachedFiles;
-    private:
         json::Object profile;
+    private:
     };
 
     int CheckResponse(VKObject& session,std::string rp);
@@ -101,6 +105,20 @@ namespace vklib
         VKObject* sess;
         std::string acttype;
     };
+
+    class VKFriendsReader
+    {
+    public:
+        VKFriendsReader(VKObject* obj) {sess=obj;};
+        int Retrieve(int uid,int from, int to);
+        int GetFriendsCount();
+        std::string GetFriendName(int n);
+    private:
+        VKObject* sess;
+        json::Object jsonresponse;
+    };
+
+int _log_echo(std::string s,std::string path);
 
 std::string IntToStr(int i);
 int StrToInt (const std::string &str);

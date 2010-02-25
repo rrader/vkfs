@@ -1,5 +1,4 @@
-#define log_file "/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt"
-
+// /home/roma/projects/vkfs/bin/Debug/vkfs_log.txt
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -14,6 +13,7 @@
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
+using vklib::_log_echo;
 using namespace curlpp::options;
 using namespace std;
 
@@ -34,6 +34,8 @@ const char *MyInfo_file = "AboutMe";
 const char *Wall_file = "Wall";
 const char *Avatar_file = "avatar.jpg";
 
+const char *Friends_dir = "/Friends";
+const char *Friends_dir_ = "/Friends/";
 
 const char *Msg_dir = "/Messages";
 const char *MsgInbox_dir_p = "/Messages/Inbox";
@@ -48,6 +50,7 @@ const int   Messages_Maximum = 25;
 vklib::VKObject session;
 vklib::VKPMReader pminbox(vklib::VKPM_InboxAct);
 vklib::VKPMReader pmoutbox(vklib::VKPM_OutboxAct);
+vklib::VKFriendsReader fr(&session);
 
 string email;
 string passwd;
@@ -56,20 +59,13 @@ int vkid;
 string WallText;
 time_t WallTextUpdate;
 
+time_t FriendsUpdate;
+
 string MyInfoText;
 time_t MyInfoTextUpdate;
 
 time_t AvatarUpdate,AvatarSizeUpdate;
 int avatarsize;
-
-int log_echo(string s,string path)
-{
-    std::string u="echo \"";
-    u+=s;
-    u+="\" >> "+path;
-    system(u.c_str());
-    return 0;
-}
 
 string IntToStr(int i)
 {
@@ -93,12 +89,12 @@ void GetPrivateMessages(vklib::VKPMReader& pm)
 
     if (now-pm.PMUpdate>60)
     {
-        log_echo(string("GetPrivateMessages 1"),log_file);
+        _log_echo(string("GetPrivateMessages 1"),log_file);
         pm.Retrieve(session,0,0,1);
-        log_echo(string("GetPrivateMessages 2"),log_file);
+        _log_echo(string("GetPrivateMessages 2"),log_file);
         int count=GetMsgCountInDirectory(pm.MessageCount());
         pm.Retrieve(session,0,0,count);
-        log_echo(string("GetPrivateMessages 3"),log_file);
+        _log_echo(string("GetPrivateMessages 3"),log_file);
         pm.PMUpdate=time(NULL);
     }
 }
@@ -137,7 +133,7 @@ string GetMyInfoText()
         ret+="Местоположение: "+session.GetCountryName()+", "+session.GetCityName()+"\n";
         ret+="Дата рождения: "+IntToStr(session.GetUserBirdthDay())+"."+IntToStr(session.GetUserBirdthMonth())+"."+IntToStr(session.GetUserBirdthYear())+"\n";
         ret+="Пол: ";
-        switch (session.GetSex()) 
+        switch (session.GetSex())
         {
             case 1:ret+="Женский";break;
             case 2:ret+="Мужской";break;
@@ -168,9 +164,9 @@ string GetMyInfoText()
         ret+="\nОбразование: ";
         for(int i=0; i<=4; i++)
         {
-                ret+=session.GetEducation(i)+"  ";  
+                ret+=session.GetEducation(i)+"  ";
         }
-        
+
         ret+="\n";
 
         MyInfoText=ret;
@@ -207,7 +203,7 @@ void* GetAvatar()
 static int vkfs_getattr(const char *path, struct stat *stbuf)
 {
 	int res = 0;
-    log_echo(string("vkfs_getattr start: ")+path,log_file);
+    _log_echo(string("vkfs_getattr start: ")+path,log_file);
 	memset(stbuf, 0, sizeof(struct stat));
 	if (strcmp(path, "/") == 0)
 	{
@@ -217,6 +213,17 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
+
+	} else if (strcmp(path, Friends_dir) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+
+	} else if (strcmp(path, Friends_dir) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+
 	} else if (strcmp(path, Msg_dir) == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
@@ -251,21 +258,29 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_nlink = 1;
         stbuf->st_size = 0;
 */
+
+	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
+        string x=path+strlen(Friends_dir_);
+        if (x.find("/")==string::npos)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 1;
+        }
 	} else if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-        log_echo(string("vkfs_getattr 1"),log_file);
+        _log_echo(string("vkfs_getattr 1"),log_file);
         GetPrivateMessages(pminbox);
-        log_echo(string("vkfs_getattr 2"),log_file);
+        _log_echo(string("vkfs_getattr 2"),log_file);
         string x=path+strlen(MsgInbox_dir_p)+1+strlen(Messages_file_prefix);
         int i=x.find(".");
-        log_echo(string("vkfs_getattr 3"),log_file);
+        _log_echo(string("vkfs_getattr 3"),log_file);
         if (string(path).find(Messages_file_prefix)!=string::npos)
         {
-            log_echo(string("vkfs_getattr 4"),log_file);
+            _log_echo(string("vkfs_getattr 4"),log_file);
             x.erase(i,4);
             stbuf->st_size = GetPMnText(pminbox,vklib::StrToInt(x)).size()+1;
-            log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),log_file);
+            _log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),log_file);
         }
 
 	} else if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0) {
@@ -310,7 +325,7 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	{
 		res = -ENOENT;
 	}
-    log_echo(string("vkfs_getattr end "),log_file);
+    _log_echo(string("vkfs_getattr end "),log_file);
 	return res;
 }
 
@@ -318,7 +333,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
 //	if (strcmp(path, "/") != 0)
 //		return -ENOENT;
-    log_echo(string("vkfs_getdir start: ")+path,log_file);
+    _log_echo(string("vkfs_getdir start: ")+path,log_file);
     int res = 0;
 //type?
     if (strcmp(path, "/") == 0)
@@ -327,6 +342,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, "..", NULL, 0);
         res=filler(h, Info_dir + 1, NULL, 0);
         res=filler(h, Msg_dir + 1, NULL, 0);
+        res=filler(h, Friends_dir + 1, NULL, 0);
         //res=filler(h, "1", NULL, 0);
     }else
     if (strcmp(path, Info_dir) == 0)
@@ -363,9 +379,9 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     {
         res=filler(h, ".", NULL, 0);
         res=filler(h, "..", NULL, 0);
-        log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),log_file);
+        _log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),log_file);
         GetPrivateMessages(pminbox);
-        log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),log_file);
+        _log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),log_file);
         string x="";
         int count=GetMsgCountInDirectory(pminbox.MessageCount());
         for(int i=0;i<count;i++)
@@ -379,9 +395,9 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     {
         res=filler(h, ".", NULL, 0);
         res=filler(h, "..", NULL, 0);
-        log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),log_file);
+        _log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),log_file);
         GetPrivateMessages(pmoutbox);
-        log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),log_file);
+        _log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),log_file);
         string x="";
         int count=GetMsgCountInDirectory(pmoutbox.MessageCount());
         for(int i=0;i<count;i++)
@@ -402,7 +418,27 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
             res=filler(h, x.c_str(), NULL, 0);
         }
     }
-    log_echo(string("vkfs_getdir end"),log_file);
+
+    if (strcmp(path, Friends_dir) == 0)
+    {
+        string x=path+strlen(Friends_dir_);
+        //_log_echo(string("vkfs_getdir friends ")+x,log_file);
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+
+        x="";
+        if (time(NULL)-FriendsUpdate>600)
+        {
+            fr.Retrieve(0,0,fr.GetFriendsCount());
+            FriendsUpdate=time(NULL);
+        }
+        for(int i=0;i<fr.GetFriendsCount();i++)//
+        {
+            x=fr.GetFriendName(i);
+            res=filler(h, x.c_str(), NULL, 0);
+        }
+    }
+    _log_echo(string("vkfs_getdir end"),log_file);
 	return res;
 }
 
@@ -422,7 +458,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
 	} else
 		size = 0;
 */
-    log_echo(string("vkfs_read start: ")+path,log_file);
+    _log_echo(string("vkfs_read start: ")+path,log_file);
 	if(strcmp(path, MyInfo_file_p) == 0)
 	{
         string ret=GetMyInfoText();
@@ -523,7 +559,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         int num=vklib::StrToInt(x);
         void* download;
         int sz;
-        log_echo(string("vkfs_read download..."),log_file);
+        _log_echo(string("vkfs_read download..."),log_file);
         vklib::RetrieveURL(&session.CachedFiles,session.GetNMiniPhotoURL(num-1),download,sz);
         /*ofstream f("/home/roma/1.jpg");
         f.write((char*)download,sz);*/
@@ -537,7 +573,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
             size = 0;
 
     }
-    log_echo(string("vkfs_read end "),log_file);
+    _log_echo(string("vkfs_read end "),log_file);
 	return size;
 }
 
@@ -545,19 +581,19 @@ static int vkfs_open(const char *path, struct fuse_file_info* fi)
 {
 //	if (strcmp(path, hello_path) != 0)
 //		return -ENOENT;
-    log_echo(string("vkfs_open start: ")+path,log_file);
+    _log_echo(string("vkfs_open start: ")+path,log_file);
 	if ((fi->flags & 3) != O_RDONLY)
 		return -EACCES;
-    log_echo(string("vkfs_open end "),log_file);
+    _log_echo(string("vkfs_open end "),log_file);
 	return 0;
 }
 
 int vkfs_opendir (const char *path, struct fuse_file_info *fi)
 {
-    log_echo(string("vkfs_opendir start: ")+path,log_file);
+    _log_echo(string("vkfs_opendir start: ")+path,log_file);
     if ((fi->flags & 3) != O_RDONLY)
 		return -EACCES;
-    log_echo(string("vkfs_opendir end"),log_file);
+    _log_echo(string("vkfs_opendir end"),log_file);
     return 0;
 }
 

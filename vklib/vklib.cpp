@@ -29,6 +29,14 @@ int StrToInt (const std::string &str)
     return n;
 }
 
+int _log_echo(std::string s,std::string path)
+{
+    std::string u="echo \"";
+    u+=s;
+    u+="\" >> "+path;
+    system(u.c_str());
+    return 0;
+}
 
 using namespace cURLpp;
 using namespace Options;
@@ -41,9 +49,10 @@ int m_BufferSize;
 
 size_t WriteStringCallback(char* ptr, size_t size, size_t nmemb)
 {
-    RequestAnswer += ptr;
-    int FullSize = size*nmemb;
-    return FullSize;
+    size_t realsize = size * nmemb;
+    RequestAnswer.append(ptr,realsize);
+
+    return realsize;
 }
 
 size_t WriteMemoryCallback(char* ptr, size_t size, size_t nmemb)
@@ -272,9 +281,9 @@ int VKObject::GetNMiniPhotoSize(int n)
 
 void ProcessLongJSON(string& s)
 {
-    int i=s.size();
-    while (s[i--]!='}');
-    s.erase(i+2,s.size()-i+1);
+//    int i=s.size();
+//    while ((s[i-1]!='}')&&(s[i-1]!=']')) i--;
+//    s.erase(i+1,s.size()-i);
     s=replacestr(s,"\\/","/");
     s=replacestr(s,"\\t","\t");
 }
@@ -293,9 +302,12 @@ int VKObject::RetrievePersonalInfo()
     request->setOpt(Header(false));
     request->setOpt(MaxRedirs(0));
     RequestAnswer="";
-    request->perform();
     time_t x=time(NULL);
-    while (time(NULL)-x<1);
+    while (time(NULL)-x<0.5);
+    request->perform();
+    x=time(NULL);
+    while (time(NULL)-x<0.5);
+
     delete request;
     if (CheckResponse(*this,RequestAnswer)!=0)
     {
@@ -304,17 +316,19 @@ int VKObject::RetrievePersonalInfo()
 
     ProcessLongJSON(RequestAnswer);
 
-    //cout<<RequestAnswer;
+    //cout<<RequestAnswer<<"\n";
     std::stringstream stream(RequestAnswer);
     profile.Clear();
-    try
-    {
+    x=time(NULL);
+    while (time(NULL)-x<0.5);
+    /*try
+    {*/
       json::Reader::Read(profile, stream);
-    }catch(...)
+    /*}catch(...)
     {
         cerr<<"Trying...";
         RetrievePersonalInfo();
-    }
+    }*/
     return 0;
 }
 
@@ -423,6 +437,7 @@ string VKObject::GetMiddleName()
     return ((json::String&)(profile["mn"])).Value();
 }
 
+//стена
 int VKWallReader::Retrieve(VKObject& session,int uid,int from, int to)
 {
     sess=&session;
@@ -544,7 +559,6 @@ int VKPMReader::Retrieve(VKObject& session,int uid,int from, int to)
     try
     {
         ProcessLongJSON(RequestAnswer);
-
         std::stringstream stream(RequestAnswer);
         jsonresponse.Clear();
         json::Reader::Read(jsonresponse, stream);
@@ -607,6 +621,59 @@ string VKPMReader::GetMessageReceiverName(int n)
 {
     json::Array& d=jsonresponse["d"];
     return ((json::String&)(d[n][4][1])).Value();
+}
+
+//friends
+
+int VKFriendsReader::Retrieve(int uid,int from, int to)
+{
+    Easy* wall=new Easy;
+    WriteFunctionFunctor functor(WriteStringCallback);
+    WriteFunction* cb = new curlpp::options::WriteFunction(functor);
+    wall->setOpt(cb);
+    wall->setOpt(Url("http://userapi.com/data"));
+    wall->setOpt(Post(true));
+    wall->setOpt(Header(false));
+
+    std::string fields=sess->sid+"&act=friends&";
+    if (uid!=0)
+    {
+        fields+="id="+IntToStr(uid)+"&";
+    }
+    fields+="from="+IntToStr(from)+"&to="+IntToStr(to);
+
+    wall->setOpt(PostFields(fields));
+    RequestAnswer="";
+    wall->perform();
+    if (CheckResponse(*sess,RequestAnswer)!=0)
+    {
+        return Retrieve(uid,from,to);
+    }
+
+    try
+    {
+        ProcessLongJSON(RequestAnswer);
+        RequestAnswer="{ \"d\" : "+RequestAnswer+" }";
+        //_log_echo(RequestAnswer,log_file);
+        std::stringstream stream(RequestAnswer);
+        jsonresponse.Clear();
+        json::Reader::Read(jsonresponse, stream);
+    }catch(...)
+    {
+        _log_echo("Trying...",log_file);cerr<<"Trying...";
+        Retrieve(uid,from,to);
+    }
+    delete wall;
+}
+
+int VKFriendsReader::GetFriendsCount()
+{
+    return ((json::Number&)(sess->profile["fr"]["n"])).Value();
+}
+
+string VKFriendsReader::GetFriendName(int n)
+{
+    return ((json::String&)(jsonresponse["d"][n][1])).Value();
 }
 
 }
