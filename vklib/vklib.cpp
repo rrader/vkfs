@@ -358,6 +358,11 @@ int VKObject::GetSex()
     return ((json::Number&)(profile["sx"])).Value();
 }
 
+string VKObject::GetEducation(int n)
+{
+    return ((json::String&)(profile["edu"][n][3])).Value();
+}
+
 string VKObject::GetStatus()
 {
     return ((json::String&)(profile["actv"]["5"])).Value();

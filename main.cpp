@@ -165,6 +165,12 @@ string GetMyInfoText()
             case 7:ret+="ультраконсервативные"; break;
             case 8:ret+="индифферентные"; break;
         }
+        ret+="\nОбразование: ";
+        for(int i=0; i<=4; i++)
+        {
+                ret+=session.GetEducation(i)+"  ";  
+        }
+        
         ret+="\n";
 
         MyInfoText=ret;

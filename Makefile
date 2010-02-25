@@ -6,3 +6,6 @@ obj/main.o: main.cpp
 
 obj/vklib.o: vklib/vklib.cpp
 	g++ -w -c vklib/vklib.cpp -o obj/vklib.o
+
+clean:
+	rm obj/*o bin/vkfs

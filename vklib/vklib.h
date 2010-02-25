@@ -27,6 +27,7 @@ namespace vklib
         std::string GetMiddleName();
         std::string GetLastName();
         int GetSex();
+        std::string GetEducation(int n);
         std::string GetStatus();
         int GetCountryID();
         std::string GetCountryName();
