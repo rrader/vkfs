@@ -55,7 +55,7 @@ size_t WriteMemoryCallback(char* ptr, size_t size, size_t nmemb)
         realsize = 0;
     }
 
-    memcpy((m_pBuffer+m_BufferSize), ptr, realsize);
+    memcpy(((char*)m_pBuffer+m_BufferSize), ptr, realsize);
     m_BufferSize += realsize;
     return realsize;
 };
