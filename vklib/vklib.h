@@ -19,11 +19,28 @@ namespace vklib
         int size;
     };
 
+    struct UserProfileCacheStruct;
+
     class VKObject
     {
     public:
         int Login(std::string EMail,std::string Passwd);
+        int GetMyVkontakteID();
+
+        std::string sid;
+        std::string remixpassword;
+        std::vector<FileCacheStruct> CachedFiles;
+        std::vector<UserProfileCacheStruct> UserProfiles;
+    private:
+    };
+
+    class VKUserProfile
+    {
+    public:
+        VKUserProfile(VKObject* session,int id=0);
+
         int RetrievePersonalInfo();
+
         int GetVkontakteID();
         std::string GetFirstName();
         std::string GetMiddleName();
@@ -52,13 +69,20 @@ namespace vklib
         int GetNPhotoSize(int n);
         int GetNMiniPhotoSize(int n);
 
-        std::string sid;
-        std::string remixpassword;
+        json::Object profile;
         void* avatar;
         int avatarsize;
-        std::vector<FileCacheStruct> CachedFiles;
-        json::Object profile;
     private:
+        int vkid;
+        VKObject* session;
+        time_t Update;
+    };
+
+    struct UserProfileCacheStruct
+    {
+        int id;
+        time_t time;
+        VKUserProfile* prof;
     };
 
     int CheckResponse(VKObject& session,std::string rp);
@@ -113,11 +137,12 @@ namespace vklib
         int Retrieve(int uid,int from, int to);
         int GetFriendsCount();
         std::string GetFriendName(int n);
+        int GetFriendID(int n);
     private:
         VKObject* sess;
         json::Object jsonresponse;
     };
-    
+
     class VKFavoritesReader
     {
     public:
@@ -135,6 +160,7 @@ int _log_echo(std::string s,std::string path);
 std::string IntToStr(int i);
 int StrToInt (const std::string &str);
 void RetrieveURL(std::vector<FileCacheStruct>* CachedFiles,std::string url, void*& buff, int& size);
+vklib::VKUserProfile& GetUserProfile(std::vector<UserProfileCacheStruct>* Cached, VKObject* session, int id);
 }
 
 #endif

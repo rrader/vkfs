@@ -55,6 +55,7 @@ vklib::VKPMReader pminbox(vklib::VKPM_InboxAct);
 vklib::VKPMReader pmoutbox(vklib::VKPM_OutboxAct);
 vklib::VKFriendsReader fr(&session);
 vklib::VKFavoritesReader fv(&session);
+//vklib::VKUserProfile me(&session);
 
 string email;
 string passwd;
@@ -126,26 +127,32 @@ string GetWallText()
     return WallText;
 }
 
-string GetMyInfoText()
+inline vklib::VKUserProfile& UserProfile(int id)
 {
-    time_t now = time (NULL);
+    return vklib::GetUserProfile(&session.UserProfiles,&session,id);
+}
+
+string GetUserInfoText(int id)
+{
+    /*time_t now = time (NULL);
 
     if (now-MyInfoTextUpdate>60)
-    {
-        session.RetrievePersonalInfo();
-        string ret=session.GetFirstName()+" "+session.GetMiddleName()+" "+session.GetLastName()+"\n---------------------------\n";
-        ret+="Статус: "+session.GetStatus()+"\n\n";
-        ret+="Местоположение: "+session.GetCountryName()+", "+session.GetCityName()+"\n";
-        ret+="Дата рождения: "+IntToStr(session.GetUserBirdthDay())+"."+IntToStr(session.GetUserBirdthMonth())+"."+IntToStr(session.GetUserBirdthYear())+"\n";
+    {*/
+        vklib::VKUserProfile& me=UserProfile(id);
+        me.RetrievePersonalInfo();
+        string ret=me.GetFirstName()+" "+me.GetMiddleName()+" "+me.GetLastName()+"\n---------------------------\n";
+        ret+="Статус: "+me.GetStatus()+"\n\n";
+        ret+="Местоположение: "+me.GetCountryName()+", "+me.GetCityName()+"\n";
+        ret+="Дата рождения: "+IntToStr(me.GetUserBirdthDay())+"."+IntToStr(me.GetUserBirdthMonth())+"."+IntToStr(me.GetUserBirdthYear())+"\n";
         ret+="Пол: ";
-        switch (session.GetSex())
+        switch (me.GetSex())
         {
             case 1:ret+="Женский";break;
             case 2:ret+="Мужской";break;
         }
-        ret+="\nГород рождения: "+session.GetBirdthCityName()+"\n";
+        ret+="\nГород рождения: "+me.GetBirdthCityName()+"\n";
         ret+="Семейное положение: ";
-        switch (session.GetMaritalStatus())
+        switch (me.GetMaritalStatus())
         {
             case 1:ret+="Не женат"; break;
             case 2:ret+="Есть подруга"; break;
@@ -155,7 +162,7 @@ string GetMyInfoText()
             case 6:ret+="В активном поиске"; break;
         }
         ret+="\nПолитические взгляды: ";
-        switch (session.GetPoliticalStatus())
+        switch (me.GetPoliticalStatus())
         {
             case 1:ret+="коммунистические"; break;
             case 2:ret+="социалистические"; break;
@@ -167,45 +174,45 @@ string GetMyInfoText()
             case 8:ret+="индифферентные"; break;
         }
         ret+="\nОбразование: ";
-        for(int i=0; i<=sizeof(session.GetEducation(i))-1; i++)
+        for(int i=0; i<=sizeof(me.GetEducation(i))-1; i++)
         {
-           if(i<sizeof(session.GetEducation(i))-1)
-            ret+=session.GetEducation(i)+" | ";
+           if(i<sizeof(me.GetEducation(i))-1)
+            ret+=me.GetEducation(i)+" | ";
            else
-            ret+=session.GetEducation(i);
+            ret+=me.GetEducation(i);
         }
 
         ret+="\n";
 
         MyInfoText=ret;
         MyInfoTextUpdate=time(NULL);
-    }
+    //}
     return MyInfoText;
 }
 
 
-int GetAvatarSize()
+int GetAvatarSize(int id)
 {
     time_t now = time (NULL);
 
     if (now-AvatarSizeUpdate>600)
     {
-        avatarsize=session.GetAvatarSize();
+        avatarsize=UserProfile(id).GetAvatarSize();
         AvatarSizeUpdate=time(NULL);
     }
     return avatarsize;
 }
 
-void* GetAvatar()
+void* GetAvatar(int id)
 {
     time_t now = time (NULL);
 
     if (now-AvatarUpdate>600)
     {
-        session.RetreiveAvatar();
+        UserProfile(id).RetreiveAvatar();
         AvatarUpdate=time(NULL);
     }
-    return session.avatar;
+    return UserProfile(id).avatar;
 }
 
 static int vkfs_getattr(const char *path, struct stat *stbuf)
@@ -259,24 +266,6 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 
-/*
-	} else if (strcmp(path, "/1") == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-
-	} else if (strcmp(path, "/1/2") == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 1;
-
-	} else if (strcmp(path, "/1/2/test") == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-        stbuf->st_size = 0;
-*/
-
 	} else if (strncmp(path, Favorites_dir_, strlen(Favorites_dir_)) == 0) {
         string x=path+strlen(Favorites_dir_);
         if (x.find("/")==string::npos)
@@ -323,12 +312,12 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
         if (x.find(".jpg")!=string::npos)
         {
             x.erase(i,4);
-            stbuf->st_size = session.GetNMiniPhotoSize(vklib::StrToInt(x)-1);
+            stbuf->st_size = UserProfile(0).GetNMiniPhotoSize(vklib::StrToInt(x)-1);
         }
 	} else if (strcmp(path, MyInfo_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		string ret=GetMyInfoText();
+		string ret=GetUserInfoText(0);
 		stbuf->st_size = ret.size()+1;
 	} else if (strcmp(path, Wall_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
@@ -338,22 +327,24 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	} else if (strcmp(path, Avatar_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		stbuf->st_size = GetAvatarSize();
+		stbuf->st_size = GetAvatarSize(0);
 
 	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
         string x=path+strlen(Friends_dir_);
-//        _log_echo(string("vkfs_getattr ############### ")+x,log_file);
+        //_log_echo(string("vkfs_getattr ############### ")+x,log_file);
         if (x.find("/")!=string::npos)
         {
-            x.erase(0,x.find("/"));
-            if (x.compare(MyInfo_file+1) == 0) {
+            char* m=new char[10];
+            x.copy(m,x.find("."));
+
+            int u_id=vklib::StrToInt(m);
+            x.erase(0,x.find("/")+1);
+            if (x.compare(MyInfo_file) == 0) {
                 stbuf->st_mode = S_IFREG | 0444;
                 stbuf->st_nlink = 1;
-                string ret=GetMyInfoText();
+                string ret=GetUserInfoText(u_id);
                 stbuf->st_size = ret.size()+1;
             }
-
-
         }else
         {
             stbuf->st_mode = S_IFDIR | 0755;
@@ -461,7 +452,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, ".", NULL, 0);
         res=filler(h, "..", NULL, 0);
         string x="";
-        for(int i=0;i<session.GetPhotosCount();i++)//
+        for(int i=0;i<UserProfile(0).GetPhotosCount();i++)//
         {
             x=MyPhotos_file_prefix+IntToStr(i+1)+".jpg";
             res=filler(h, x.c_str(), NULL, 0);
@@ -493,7 +484,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         }
         for(int i=0;i<fr.GetFriendsCount();i++)//
         {
-            x=fr.GetFriendName(i);
+            x=IntToStr(i+1)+". "+fr.GetFriendName(i);
             res=filler(h, x.c_str(), NULL, 0);
         }
     }
@@ -539,7 +530,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
     _log_echo(string("vkfs_read start: ")+path,log_file);
 	if(strcmp(path, MyInfo_file_p) == 0)
 	{
-        string ret=GetMyInfoText();
+        string ret=GetUserInfoText(0);
 	    len = ret.size();
 	    if (offset < len)
 	    {
@@ -567,13 +558,13 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
 
 	if(strcmp(path, Avatar_file_p) == 0)
 	{
-	    len = GetAvatarSize();
+	    len = GetAvatarSize(0);
 	    if (offset < len)
 	    {
             size=len;/*
 	        if (offset + size > len)
                 size = len-offset; */
-            memcpy(buf, GetAvatar() , GetAvatarSize());//+ offset
+            memcpy(buf, GetAvatar(0) , GetAvatarSize(0));//+ offset
 	    }
             else size=0;
 	}
@@ -638,7 +629,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         void* download;
         int sz;
         _log_echo(string("vkfs_read download..."),log_file);
-        vklib::RetrieveURL(&session.CachedFiles,session.GetNMiniPhotoURL(num-1),download,sz);
+        vklib::RetrieveURL(&session.CachedFiles,UserProfile(0).GetNMiniPhotoURL(num-1),download,sz);
         /*ofstream f("/home/roma/1.jpg");
         f.write((char*)download,sz);*/
 
@@ -650,6 +641,31 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         } else
             size = 0;
 
+    }
+
+    if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
+    {
+        string x=path+strlen(Friends_dir_);
+        if (x.find("/")!=string::npos)
+        {
+            char* m=new char[10];
+            x.copy(m,x.find("."));
+
+            int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
+            x.erase(0,x.find("/")+1);
+            if (x.compare(MyInfo_file) == 0) {
+                string ret=GetUserInfoText(u_id);
+                len = ret.size();
+                if (offset < len)
+                {
+                    size=len;
+                    if (offset + size > len)
+                        size = len-offset;
+                    memcpy(buf, ret.c_str() + offset, size);
+                }
+                    else size=0;
+            }
+        }
     }
     _log_echo(string("vkfs_read end "),log_file);
 	return size;
@@ -689,8 +705,8 @@ int main(int argc, char* argv[])
     cout<<"password:";
     cin>>passwd;
     session.Login(email,passwd);
-    session.RetrievePersonalInfo();
-    vkid=session.GetVkontakteID();
+    UserProfile(0).RetrievePersonalInfo();
+    vkid=session.GetMyVkontakteID();
     cout<<"Your ID: "<<vkid<<"\n";
     return fuse_main(argc, argv, &vkfs_opers, NULL);
 }
