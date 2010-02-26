@@ -23,14 +23,14 @@ const char *MyInfo_file = "Обо мне";
 
 const char *Msg_dir = "/Мои сообщения";*/
 const char *Info_dir = "/My_Info";
-const char *MyInfo_file_p = "/My_Info/AboutMe";
+const char *MyInfo_file_p = "/My_Info/Profile";
 const char *Wall_file_p = "/My_Info/Wall";
 const char *Avatar_file_p = "/My_Info/avatar.jpg";
 const char *MyPhotos_dir = "Photos";
 const char *MyPhotos_dir_p = "/My_Info/Photos";
 const char *MyPhotos_dir_p_f = "/My_Info/Photos/";
 const char *MyPhotos_file_prefix = "Photo_";
-const char *MyInfo_file = "AboutMe";
+const char *MyInfo_file = "Profile";
 const char *Wall_file = "Wall";
 const char *Avatar_file = "avatar.jpg";
 
@@ -172,7 +172,7 @@ string GetMyInfoText()
            if(i<sizeof(session.GetEducation(i))-1)
             ret+=session.GetEducation(i)+" | ";
            else
-            ret+=session.GetEducation(i); 
+            ret+=session.GetEducation(i);
         }
 
         ret+="\n";
@@ -277,13 +277,6 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
         stbuf->st_size = 0;
 */
 
-	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
-        string x=path+strlen(Friends_dir_);
-        if (x.find("/")==string::npos)
-        {
-            stbuf->st_mode = S_IFDIR | 0755;
-            stbuf->st_nlink = 1;
-        }
 	} else if (strncmp(path, Favorites_dir_, strlen(Favorites_dir_)) == 0) {
         string x=path+strlen(Favorites_dir_);
         if (x.find("/")==string::npos)
@@ -346,6 +339,26 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = GetAvatarSize();
+
+	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
+        string x=path+strlen(Friends_dir_);
+//        _log_echo(string("vkfs_getattr ############### ")+x,log_file);
+        if (x.find("/")!=string::npos)
+        {
+            x.erase(0,x.find("/"));
+            if (x.compare(MyInfo_file+1) == 0) {
+                stbuf->st_mode = S_IFREG | 0444;
+                stbuf->st_nlink = 1;
+                string ret=GetMyInfoText();
+                stbuf->st_size = ret.size()+1;
+            }
+
+
+        }else
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 1;
+        }
 	}else
 	{
 		res = -ENOENT;
@@ -354,10 +367,19 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	return res;
 }
 
+int UserProfileFiller(const char *path, fuse_dirh_t& h, fuse_dirfil_t& filler, int& res)
+{
+    res=filler(h, MyPhotos_dir, NULL, 0);
+    res=filler(h, MyInfo_file, NULL, 0);
+    res=filler(h, Wall_file, NULL, 0);
+    res=filler(h, Avatar_file, NULL, 0);
+    return res;
+}
+
 static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
-//	if (strcmp(path, "/") != 0)
-//		return -ENOENT;
+//      if (strcmp(path, "/") != 0)
+//              return -ENOENT;
     _log_echo(string("vkfs_getdir start: ")+path,log_file);
     int res = 0;
 //type?
@@ -400,6 +422,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, MsgInbox_dir, NULL, 0);
         res=filler(h, MsgOutbox_dir, NULL, 0);
     }
+
 
     if (strcmp(path, MsgInbox_dir_p) == 0)
     {
@@ -445,6 +468,16 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         }
     }
 
+    if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
+        string x=path+strlen(Friends_dir_);
+        if (x.find("/")==string::npos)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            UserProfileFiller(path,h,filler,res);
+        }
+    }
+
     if (strcmp(path, Friends_dir) == 0)
     {
         string x=path+strlen(Friends_dir_);
@@ -483,8 +516,9 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         }
     }
     _log_echo(string("vkfs_getdir end"),log_file);
-	return res;
+        return res;
 }
+
 
 static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *)
 //		      struct fuse_file_info *fi)
