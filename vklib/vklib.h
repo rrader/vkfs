@@ -117,6 +117,18 @@ namespace vklib
         VKObject* sess;
         json::Object jsonresponse;
     };
+    
+    class VKFavoritesReader
+    {
+    public:
+        VKFavoritesReader(VKObject* obj) {sess=obj;};
+        int Retrieve(int from, int to);
+        int GetFavoritesCount();
+        std::string GetFavoritesName(int n);
+    private:
+        VKObject* sess;
+        json::Object jsonresponse;
+    };
 
 int _log_echo(std::string s,std::string path);
 

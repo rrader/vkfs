@@ -676,4 +676,52 @@ string VKFriendsReader::GetFriendName(int n)
     return ((json::String&)(jsonresponse["d"][n][1])).Value();
 }
 
+//Favorites
+
+int VKFavoritesReader::Retrieve(int from, int to)
+{
+    Easy* wall=new Easy;
+    WriteFunctionFunctor functor(WriteStringCallback);
+    WriteFunction* cb = new curlpp::options::WriteFunction(functor);
+    wall->setOpt(cb);
+    wall->setOpt(Url("http://userapi.com/data"));
+    wall->setOpt(Post(true));
+    wall->setOpt(Header(false));
+
+    std::string fields=sess->sid+"&act=fave&";
+    fields+="from="+IntToStr(from)+"&to="+IntToStr(to);
+
+    wall->setOpt(PostFields(fields));
+    RequestAnswer="";
+    wall->perform();
+    if (CheckResponse(*sess,RequestAnswer)!=0)
+    {
+        return Retrieve(from,to);
+    }
+
+    try
+    {
+        ProcessLongJSON(RequestAnswer);
+        _log_echo(RequestAnswer,log_file);
+        std::stringstream stream(RequestAnswer);
+        jsonresponse.Clear();
+        json::Reader::Read(jsonresponse, stream);
+    }catch(...)
+    {
+        _log_echo("Trying...",log_file);cerr<<"Trying...";
+        Retrieve(from,to);
+    }
+    delete wall;
+}
+
+int VKFavoritesReader::GetFavoritesCount()
+{
+    return ((json::Number&)(jsonresponse["n"])).Value();
+}
+
+string VKFavoritesReader::GetFavoritesName(int n)
+{
+    return ((json::String&)(jsonresponse["d"][n][1])).Value();
+}
+
 }

@@ -37,6 +37,9 @@ const char *Avatar_file = "avatar.jpg";
 const char *Friends_dir = "/Friends";
 const char *Friends_dir_ = "/Friends/";
 
+const char *Favorites_dir = "/Favorites";
+const char *Favorites_dir_ = "/Favorites/";
+
 const char *Msg_dir = "/Messages";
 const char *MsgInbox_dir_p = "/Messages/Inbox";
 const char *MsgInbox_dir = "Inbox";
@@ -51,6 +54,7 @@ vklib::VKObject session;
 vklib::VKPMReader pminbox(vklib::VKPM_InboxAct);
 vklib::VKPMReader pmoutbox(vklib::VKPM_OutboxAct);
 vklib::VKFriendsReader fr(&session);
+vklib::VKFavoritesReader fv(&session);
 
 string email;
 string passwd;
@@ -60,6 +64,7 @@ string WallText;
 time_t WallTextUpdate;
 
 time_t FriendsUpdate;
+time_t FavoritesUpdate;
 
 string MyInfoText;
 time_t MyInfoTextUpdate;
@@ -162,9 +167,12 @@ string GetMyInfoText()
             case 8:ret+="индифферентные"; break;
         }
         ret+="\nОбразование: ";
-        for(int i=0; i<=4; i++)
+        for(int i=0; i<=sizeof(session.GetEducation(i))-1; i++)
         {
-                ret+=session.GetEducation(i)+"  ";
+           if(i<sizeof(session.GetEducation(i))-1)
+            ret+=session.GetEducation(i)+" | ";
+           else
+            ret+=session.GetEducation(i); 
         }
 
         ret+="\n";
@@ -224,6 +232,16 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 
+	}else if (strcmp(path, Favorites_dir) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+
+	} else if (strcmp(path, Favorites_dir) == 0)
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+
 	} else if (strcmp(path, Msg_dir) == 0)
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
@@ -261,6 +279,13 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 
 	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
         string x=path+strlen(Friends_dir_);
+        if (x.find("/")==string::npos)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 1;
+        }
+	} else if (strncmp(path, Favorites_dir_, strlen(Favorites_dir_)) == 0) {
+        string x=path+strlen(Favorites_dir_);
         if (x.find("/")==string::npos)
         {
             stbuf->st_mode = S_IFDIR | 0755;
@@ -343,6 +368,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, Info_dir + 1, NULL, 0);
         res=filler(h, Msg_dir + 1, NULL, 0);
         res=filler(h, Friends_dir + 1, NULL, 0);
+        res=filler(h, Favorites_dir + 1, NULL, 0);
         //res=filler(h, "1", NULL, 0);
     }else
     if (strcmp(path, Info_dir) == 0)
@@ -435,6 +461,24 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         for(int i=0;i<fr.GetFriendsCount();i++)//
         {
             x=fr.GetFriendName(i);
+            res=filler(h, x.c_str(), NULL, 0);
+        }
+    }
+    if (strcmp(path, Favorites_dir) == 0)
+    {
+        string x=path+strlen(Friends_dir_);
+        res=filler(h, ".", NULL, 0);
+        res=filler(h, "..", NULL, 0);
+
+        x="";
+        if (time(NULL)-FavoritesUpdate>600)
+        {
+            fv.Retrieve(0,fv.GetFavoritesCount());
+            FavoritesUpdate=time(NULL);
+        }
+        for(int i=0;i<fv.GetFavoritesCount();i++)
+        {
+            x=fv.GetFavoritesName(i);
             res=filler(h, x.c_str(), NULL, 0);
         }
     }
