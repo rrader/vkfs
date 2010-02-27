@@ -138,6 +138,8 @@ int CheckResponse(VKObject& session,std::string rp)
 
 int GetURLFileSize(vector<FileCacheStruct>* CachedFiles,string URL)
 {
+    if (URL.compare("")==0)
+      return 0;
     if (CachedFiles!=NULL)
     {
         vector<FileCacheStruct>::iterator it;
@@ -173,6 +175,9 @@ int GetURLFileSize(vector<FileCacheStruct>* CachedFiles,string URL)
     delete request;
 
     int is=RequestAnswer.find("Content-Length:");
+    if (RequestAnswer.find("Content-Length:")==string::npos)
+      return 0;
+    _log_echo("After checking\n",log_file);
     is=RequestAnswer.find(" ",is+1)+1;
     int i=is;
     string x="";
@@ -224,6 +229,11 @@ void RetrieveURL(vector<FileCacheStruct>* CachedFiles,string url, void*& buff, i
     string u="echo ";
     u+=url+">> /home/roma/curl.txt";
     system(u.c_str());
+    if (url.compare("")==0)
+    {
+        size=0;
+        return;
+    }
     if (CachedFiles!=NULL)
     {
         vector<FileCacheStruct>::iterator it;

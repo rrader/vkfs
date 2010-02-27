@@ -186,525 +186,579 @@ void* GetAvatar(int id)
 
 static int vkfs_getattr(const char *path, struct stat *stbuf)
 {
-	int res = 0;
-    _log_echo(string("vkfs_getattr start: ")+path,log_file);
-	memset(stbuf, 0, sizeof(struct stat));
-	if (strcmp(path, "/") == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if (strcmp(path, Info_dir) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-	} else if (strcmp(path, Friends_dir) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-	} else if (strcmp(path, Friends_dir) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-	}else if (strcmp(path, Favorites_dir) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-	} else if (strcmp(path, Favorites_dir) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-	} else if (strcmp(path, Msg_dir) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if (strcmp(path, MsgInbox_dir_p) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if (strcmp(path, MsgOutbox_dir_p) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-	} else if (strcmp(path, MyPhotos_dir_p) == 0)
-	{
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;
-
-	} else if (strncmp(path, Favorites_dir_, strlen(Favorites_dir_)) == 0) {
-        string x=path+strlen(Favorites_dir_);
-        if (x.find("/")==string::npos)
+    try
+    {
+        int res = 0;
+        _log_echo(string("vkfs_getattr start: ")+path,log_file);
+        memset(stbuf, 0, sizeof(struct stat));
+        if (strcmp(path, "/") == 0)
         {
             stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+        } else if (strcmp(path, Info_dir) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+
+        } else if (strcmp(path, Friends_dir) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+
+        } else if (strcmp(path, Friends_dir) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+
+        }else if (strcmp(path, Favorites_dir) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+
+        } else if (strcmp(path, Favorites_dir) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+
+        } else if (strcmp(path, Msg_dir) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+        } else if (strcmp(path, MsgInbox_dir_p) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+        } else if (strcmp(path, MsgOutbox_dir_p) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+        } else if (strcmp(path, MyPhotos_dir_p) == 0)
+        {
+            stbuf->st_mode = S_IFDIR | 0755;
+            stbuf->st_nlink = 2;
+
+        } else if (strncmp(path, Favorites_dir_, strlen(Favorites_dir_)) == 0) {
+            string x=path+strlen(Favorites_dir_);
+            if (x.find("/")==string::npos)
+            {
+                stbuf->st_mode = S_IFDIR | 0755;
+                stbuf->st_nlink = 1;
+            }
+        } else if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0) {
+            stbuf->st_mode = S_IFREG | 0444;
             stbuf->st_nlink = 1;
-        }
-	} else if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-        _log_echo(string("vkfs_getattr 1"),log_file);
-        GetPrivateMessages(pminbox);
-        _log_echo(string("vkfs_getattr 2"),log_file);
-        string x=path+strlen(MsgInbox_dir_p)+1+strlen(Messages_file_prefix);
-        int i=x.find(".");
-        _log_echo(string("vkfs_getattr 3"),log_file);
-        if (string(path).find(Messages_file_prefix)!=string::npos)
-        {
-            _log_echo(string("vkfs_getattr 4"),log_file);
-            x.erase(i,4);
-            stbuf->st_size = GetPMnText(pminbox,vklib::StrToInt(x)).size()+1;
-            _log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),log_file);
-        }
-
-	} else if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-        GetPrivateMessages(pmoutbox);
-        string x=path+strlen(MsgOutbox_dir_p)+1+strlen(Messages_file_prefix);
-        int i=x.find(".");
-        if (string(path).find(Messages_file_prefix)!=string::npos)
-        {
-            x.erase(i,4);
-            stbuf->st_size = GetPMnText(pmoutbox,vklib::StrToInt(x)).size()+1;
-        }
-
-
-	} else if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-
-        string x=path+strlen(MyPhotos_dir_p)+1+strlen(MyPhotos_file_prefix);
-        int i=x.find(".");
-        if (x.find(".jpg")!=string::npos)
-        {
-            x.erase(i,4);
-            UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
-            stbuf->st_size = UserProfile(0).Photos->GetNMiniPhotoSize(vklib::StrToInt(x)-1);
-        }
-	} else if (strcmp(path, MyInfo_file_p) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		string ret=GetUserInfoText(0);
-		stbuf->st_size = ret.size()+1;
-	} else if (strcmp(path, Wall_file_p) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		string ret=GetWallText(vkid);
-		stbuf->st_size = ret.size()+1;
-	} else if (strcmp(path, Avatar_file_p) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = GetAvatarSize(0);
-
-	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
-	{
-        string x=path+strlen(Friends_dir_);
-        //_log_echo(string("vkfs_getattr ############### ")+x,log_file);
-        if (x.find("/")!=string::npos)
-        {
-            char* m=new char[10];
-            x.copy(m,x.find("."));
-
-            int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
-            x.erase(0,x.find("/")+1);
-            if (x.compare(MyInfo_file) == 0) {
-                stbuf->st_mode = S_IFREG | 0444;
-                stbuf->st_nlink = 1;
-                string ret=GetUserInfoText(u_id);
-                stbuf->st_size = ret.size()+1;
-            }
-            if (x.compare(Wall_file) == 0) {
-                stbuf->st_mode = S_IFREG | 0444;
-                stbuf->st_nlink = 1;
-                string ret=GetWallText(u_id);
-                stbuf->st_size = ret.size()+1;
-            }
-            if (x.compare(Avatar_file) == 0) {
-                stbuf->st_mode = S_IFREG | 0444;
-                stbuf->st_nlink = 1;
-                stbuf->st_size = GetAvatarSize(u_id);
+            _log_echo(string("vkfs_getattr 1"),log_file);
+            GetPrivateMessages(pminbox);
+            _log_echo(string("vkfs_getattr 2"),log_file);
+            string x=path+strlen(MsgInbox_dir_p)+1+strlen(Messages_file_prefix);
+            int i=x.find(".");
+            _log_echo(string("vkfs_getattr 3"),log_file);
+            if (string(path).find(Messages_file_prefix)!=string::npos)
+            {
+                _log_echo(string("vkfs_getattr 4"),log_file);
+                x.erase(i,4);
+                stbuf->st_size = GetPMnText(pminbox,vklib::StrToInt(x)).size()+1;
+                _log_echo(string("vkfs_getattr 5, ")+pminbox.GetMessageText(vklib::StrToInt(x)-1),log_file);
             }
 
-            if (x.compare(MyPhotos_dir) == 0) {
+        } else if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0) {
+            stbuf->st_mode = S_IFREG | 0444;
+            stbuf->st_nlink = 1;
+            GetPrivateMessages(pmoutbox);
+            string x=path+strlen(MsgOutbox_dir_p)+1+strlen(Messages_file_prefix);
+            int i=x.find(".");
+            if (string(path).find(Messages_file_prefix)!=string::npos)
+            {
+                x.erase(i,4);
+                stbuf->st_size = GetPMnText(pmoutbox,vklib::StrToInt(x)).size()+1;
+            }
+
+
+        } else if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0) {
+            stbuf->st_mode = S_IFREG | 0444;
+            stbuf->st_nlink = 1;
+
+            string x=path+strlen(MyPhotos_dir_p)+1+strlen(MyPhotos_file_prefix);
+            int i=x.find(".");
+            if (x.find(".jpg")!=string::npos)
+            {
+                x.erase(i,4);
+                UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
+                stbuf->st_size = UserProfile(0).Photos->GetNMiniPhotoSize(vklib::StrToInt(x)-1);
+            }
+        } else if (strcmp(path, MyInfo_file_p) == 0) {
+            stbuf->st_mode = S_IFREG | 0444;
+            stbuf->st_nlink = 1;
+            string ret=GetUserInfoText(0);
+            stbuf->st_size = ret.size()+1;
+        } else if (strcmp(path, Wall_file_p) == 0) {
+            stbuf->st_mode = S_IFREG | 0444;
+            stbuf->st_nlink = 1;
+            string ret=GetWallText(vkid);
+            stbuf->st_size = ret.size()+1;
+        } else if (strcmp(path, Avatar_file_p) == 0) {
+            stbuf->st_mode = S_IFREG | 0444;
+            stbuf->st_nlink = 1;
+            stbuf->st_size = GetAvatarSize(0);
+
+        } else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
+        {
+            string x=path+strlen(Friends_dir_);
+            //_log_echo(string("vkfs_getattr ############### ")+x,log_file);
+            if (x.find("/")!=string::npos)
+            {
+                char* m=new char[10];
+                x.copy(m,x.find("."));
+
+                int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
+                x.erase(0,x.find("/")+1);
+                if (x.compare(MyInfo_file) == 0) {
+                    stbuf->st_mode = S_IFREG | 0444;
+                    stbuf->st_nlink = 1;
+                    string ret=GetUserInfoText(u_id);
+                    stbuf->st_size = ret.size()+1;
+                }
+                if (x.compare(Wall_file) == 0) {
+                    stbuf->st_mode = S_IFREG | 0444;
+                    stbuf->st_nlink = 1;
+                    string ret=GetWallText(u_id);
+                    stbuf->st_size = ret.size()+1;
+                }
+                if (x.compare(Avatar_file) == 0) {
+                    stbuf->st_mode = S_IFREG | 0444;
+                    stbuf->st_nlink = 1;
+                    stbuf->st_size = GetAvatarSize(u_id);
+                }
+
+                if (x.compare(MyPhotos_dir) == 0) {
+                    stbuf->st_mode = S_IFDIR | 0755;
+                    stbuf->st_nlink = 1;
+                }
+            }else
+            {
                 stbuf->st_mode = S_IFDIR | 0755;
                 stbuf->st_nlink = 1;
             }
         }else
         {
-            stbuf->st_mode = S_IFDIR | 0755;
-            stbuf->st_nlink = 1;
+            res = -ENOENT;
         }
-	}else
-	{
-		res = -ENOENT;
-	}
-    _log_echo(string("vkfs_getattr end "),log_file);
-	return res;
+        _log_echo(string("vkfs_getattr end "),log_file);
+        return res;
+    }catch(string exc)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+    }
 }
 
 int UserProfileFiller(const char *path, fuse_dirh_t& h, fuse_dirfil_t& filler, int& res)
 {
-    res=filler(h, MyPhotos_dir, NULL, 0);
-    res=filler(h, MyInfo_file, NULL, 0);
-    res=filler(h, Wall_file, NULL, 0);
-    res=filler(h, Avatar_file, NULL, 0);
-    return res;
-}
-
-static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
-{
-//      if (strcmp(path, "/") != 0)
-//              return -ENOENT;
-    _log_echo(string("vkfs_getdir start: ")+path,log_file);
-    int res = 0;
-//type?
-    if (strcmp(path, "/") == 0)
+    try
     {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        res=filler(h, Info_dir + 1, NULL, 0);
-        res=filler(h, Msg_dir + 1, NULL, 0);
-        res=filler(h, Friends_dir + 1, NULL, 0);
-        res=filler(h, Favorites_dir + 1, NULL, 0);
-        //res=filler(h, "1", NULL, 0);
-    }else
-    if (strcmp(path, Info_dir) == 0)
-    {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
         res=filler(h, MyPhotos_dir, NULL, 0);
         res=filler(h, MyInfo_file, NULL, 0);
         res=filler(h, Wall_file, NULL, 0);
         res=filler(h, Avatar_file, NULL, 0);
-    }else
-    /*if (strcmp(path, "/1") == 0)
+        return res;
+    }catch(string exc)
     {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        res=filler(h, "2", NULL, 0);
-    }else
-    if (strcmp(path, "/1/2") == 0)
+        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+    }catch(...)
     {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        res=filler(h, "test", NULL, 0);
-    }else*/
-
-    if (strcmp(path, Msg_dir) == 0)
-    {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        res=filler(h, MsgInbox_dir, NULL, 0);
-        res=filler(h, MsgOutbox_dir, NULL, 0);
+        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
     }
+}
 
-
-    if (strcmp(path, MsgInbox_dir_p) == 0)
+static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
+{
+    try
     {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        _log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),log_file);
-        GetPrivateMessages(pminbox);
-        _log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),log_file);
-        string x="";
-        int count=GetMsgCountInDirectory(pminbox.MessageCount());
-        for(int i=0;i<count;i++)
-        {
-            x=Messages_file_prefix+IntToStr(i+1)+".txt";
-            res=filler(h, x.c_str(), NULL, 0);
-        }
-    }
-
-    if (strcmp(path, MsgOutbox_dir_p) == 0)
-    {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        _log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),log_file);
-        GetPrivateMessages(pmoutbox);
-        _log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),log_file);
-        string x="";
-        int count=GetMsgCountInDirectory(pmoutbox.MessageCount());
-        for(int i=0;i<count;i++)
-        {
-            x=Messages_file_prefix+IntToStr(i+1)+".txt";
-            res=filler(h, x.c_str(), NULL, 0);
-        }
-    }
-
-    if (strcmp(path, MyPhotos_dir_p) == 0)
-    {
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-        string x="";
-        UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
-        for(int i=0;i<UserProfile(0).GetPhotosCount();i++)//
-        {
-            x=MyPhotos_file_prefix+IntToStr(i+1)+".jpg";
-            res=filler(h, x.c_str(), NULL, 0);
-        }
-    }
-
-    if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
-        string x=path+strlen(Friends_dir_);
-        if (x.find("/")==string::npos)
+    //      if (strcmp(path, "/") != 0)
+    //              return -ENOENT;
+        _log_echo(string("vkfs_getdir start: ")+path,log_file);
+        int res = 0;
+    //type?
+        if (strcmp(path, "/") == 0)
         {
             res=filler(h, ".", NULL, 0);
             res=filler(h, "..", NULL, 0);
-            UserProfileFiller(path,h,filler,res);
-        }
-    }
+            res=filler(h, Info_dir + 1, NULL, 0);
+            res=filler(h, Msg_dir + 1, NULL, 0);
+            res=filler(h, Friends_dir + 1, NULL, 0);
+            res=filler(h, Favorites_dir + 1, NULL, 0);
+            //res=filler(h, "1", NULL, 0);
+        }else
+        if (strcmp(path, Info_dir) == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            res=filler(h, MyPhotos_dir, NULL, 0);
+            res=filler(h, MyInfo_file, NULL, 0);
+            res=filler(h, Wall_file, NULL, 0);
+            res=filler(h, Avatar_file, NULL, 0);
+        }else
+        /*if (strcmp(path, "/1") == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            res=filler(h, "2", NULL, 0);
+        }else
+        if (strcmp(path, "/1/2") == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            res=filler(h, "test", NULL, 0);
+        }else*/
 
-    if (strcmp(path, Friends_dir) == 0)
+        if (strcmp(path, Msg_dir) == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            res=filler(h, MsgInbox_dir, NULL, 0);
+            res=filler(h, MsgOutbox_dir, NULL, 0);
+        }
+
+
+        if (strcmp(path, MsgInbox_dir_p) == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            _log_echo(string("vkfs_getdir MsgInbox_dir_p 1"),log_file);
+            GetPrivateMessages(pminbox);
+            _log_echo(string("vkfs_getdir MsgInbox_dir_p 2"),log_file);
+            string x="";
+            int count=GetMsgCountInDirectory(pminbox.MessageCount());
+            for(int i=0;i<count;i++)
+            {
+                x=Messages_file_prefix+IntToStr(i+1)+".txt";
+                res=filler(h, x.c_str(), NULL, 0);
+            }
+        }
+
+        if (strcmp(path, MsgOutbox_dir_p) == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            _log_echo(string("vkfs_getdir MsgOutbox_dir_p 1"),log_file);
+            GetPrivateMessages(pmoutbox);
+            _log_echo(string("vkfs_getdir MsgOutbox_dir_p 2"),log_file);
+            string x="";
+            int count=GetMsgCountInDirectory(pmoutbox.MessageCount());
+            for(int i=0;i<count;i++)
+            {
+                x=Messages_file_prefix+IntToStr(i+1)+".txt";
+                res=filler(h, x.c_str(), NULL, 0);
+            }
+        }
+
+        if (strcmp(path, MyPhotos_dir_p) == 0)
+        {
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+            string x="";
+            UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
+            for(int i=0;i<UserProfile(0).GetPhotosCount();i++)//
+            {
+                x=MyPhotos_file_prefix+IntToStr(i+1)+".jpg";
+                res=filler(h, x.c_str(), NULL, 0);
+            }
+        }
+
+        if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
+            string x=path+strlen(Friends_dir_);
+            if (x.find("/")==string::npos)
+            {
+                res=filler(h, ".", NULL, 0);
+                res=filler(h, "..", NULL, 0);
+                UserProfileFiller(path,h,filler,res);
+            }
+        }
+
+        if (strcmp(path, Friends_dir) == 0)
+        {
+            string x=path+strlen(Friends_dir_);
+            //_log_echo(string("vkfs_getdir friends ")+x,log_file);
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+
+            x="";
+            if (time(NULL)-FriendsUpdate>600)
+            {
+                fr.Retrieve(0,0,fr.GetFriendsCount());
+                FriendsUpdate=time(NULL);
+            }
+            for(int i=0;i<fr.GetFriendsCount();i++)//
+            {
+                x=IntToStr(i+1)+". "+fr.GetFriendName(i);
+                res=filler(h, x.c_str(), NULL, 0);
+            }
+        }
+        if (strcmp(path, Favorites_dir) == 0)
+        {
+            string x=path+strlen(Friends_dir_);
+            res=filler(h, ".", NULL, 0);
+            res=filler(h, "..", NULL, 0);
+
+            x="";
+            if (time(NULL)-FavoritesUpdate>600)
+            {
+                fv.Retrieve(0,fv.GetFavoritesCount());
+                FavoritesUpdate=time(NULL);
+            }
+            for(int i=0;i<fv.GetFavoritesCount();i++)
+            {
+                x=fv.GetFavoritesName(i);
+                res=filler(h, x.c_str(), NULL, 0);
+            }
+        }
+        _log_echo(string("vkfs_getdir end"),log_file);
+            return res;
+    }catch(string exc)
     {
-        string x=path+strlen(Friends_dir_);
-        //_log_echo(string("vkfs_getdir friends ")+x,log_file);
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-
-        x="";
-        if (time(NULL)-FriendsUpdate>600)
-        {
-            fr.Retrieve(0,0,fr.GetFriendsCount());
-            FriendsUpdate=time(NULL);
-        }
-        for(int i=0;i<fr.GetFriendsCount();i++)//
-        {
-            x=IntToStr(i+1)+". "+fr.GetFriendName(i);
-            res=filler(h, x.c_str(), NULL, 0);
-        }
-    }
-    if (strcmp(path, Favorites_dir) == 0)
+        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+    }catch(...)
     {
-        string x=path+strlen(Friends_dir_);
-        res=filler(h, ".", NULL, 0);
-        res=filler(h, "..", NULL, 0);
-
-        x="";
-        if (time(NULL)-FavoritesUpdate>600)
-        {
-            fv.Retrieve(0,fv.GetFavoritesCount());
-            FavoritesUpdate=time(NULL);
-        }
-        for(int i=0;i<fv.GetFavoritesCount();i++)
-        {
-            x=fv.GetFavoritesName(i);
-            res=filler(h, x.c_str(), NULL, 0);
-        }
+        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
     }
-    _log_echo(string("vkfs_getdir end"),log_file);
-        return res;
 }
 
 
 static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *)
 //		      struct fuse_file_info *fi)
 {
-	size_t len;
-//	(void) fi;
-//	if(strcmp(path, hello_path) != 0)
-//		return -ENOENT;
-
-/*	len = strlen(hello_str);
-	if (offset < len) {
-		if (offset + size > len)
-			size = len - offset;
-		memcpy(buf, hello_str + offset, size);
-	} else
-		size = 0;
-*/
-    _log_echo(string("vkfs_read start: ")+path,log_file);
-	if(strcmp(path, MyInfo_file_p) == 0)
-	{
-        string ret=GetUserInfoText(0);
-	    len = ret.size();
-	    if (offset < len)
-	    {
-            size=len;/*
-	        if (offset + size > len)
-                size = len-offset; */
-            memcpy(buf, ret.c_str() , size);//+ offset
-	    }
-            else size=0;
-	}
-
-	if(strcmp(path, Wall_file_p) == 0)
-	{
-        string ret=GetWallText(vkid);
-	    len = ret.size();
-	    if (offset < len)
-	    {
-            size=len;/*
-	        if (offset + size > len)
-                size = len-offset; */
-            memcpy(buf, ret.c_str() , size);//+ offset
-	    }
-            else size=0;
-	}
-
-	if(strcmp(path, Avatar_file_p) == 0)
-	{
-	    len = GetAvatarSize(0);
-	    if (offset < len)
-	    {
-            size=len;/*
-	        if (offset + size > len)
-                size = len-offset; */
-            memcpy(buf, GetAvatar(0) , GetAvatarSize(0));//+ offset
-	    }
-            else size=0;
-	}
-
-    if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0)
+    try
     {
-        string x=path;
-        if (string(path).find(Messages_file_prefix)==string::npos)
-            return 0;
+        size_t len;
+    //	(void) fi;
+    //	if(strcmp(path, hello_path) != 0)
+    //		return -ENOENT;
 
-        int i=x.find(Messages_file_prefix)+strlen(Messages_file_prefix);
-        x.erase(0,i);
-        i=x.find(".");
-        x.erase(i,4);
-        int num=vklib::StrToInt(x);
-
-        string ret=GetPMnText(pminbox,num);
-	    len = ret.size();
-
-	    if (offset < len)
-	    {
-            size=len;
-            memcpy(buf, ret.c_str() , size);
-	    }
-            else size=0;
-    }
-
-    if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0)
-    {
-        string x=path;
-        if (string(path).find(Messages_file_prefix)==string::npos)
-            return 0;
-
-        int i=x.find(Messages_file_prefix)+strlen(Messages_file_prefix);
-        x.erase(0,i);
-        i=x.find(".");
-        x.erase(i,4);
-        int num=vklib::StrToInt(x);
-
-        string ret=GetPMnText(pmoutbox,num);
-	    len = ret.size();
-
-	    if (offset < len)
-	    {
-            size=len;
-            memcpy(buf, ret.c_str() , size);
-	    }
-            else size=0;
-    }
-
-    if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0)
-    {
-        string x=path;
-        if (string(path).find(MyPhotos_file_prefix)==string::npos)
-            return 0;
-
-        int i=x.find(MyPhotos_file_prefix)+strlen(MyPhotos_file_prefix);
-        x.erase(0,i);
-        i=x.find(".");
-        x.erase(i,4);
-        int num=vklib::StrToInt(x);
-        void* download;
-        int sz;
-        _log_echo(string("vkfs_read download..."),log_file);
-        vklib::RetrieveURL(&session.CachedFiles,UserProfile(0).Photos->GetNMiniPhotoURL(num-1),download,sz);
-        /*ofstream f("/home/roma/1.jpg");
-        f.write((char*)download,sz);*/
-
-        len = sz;
+    /*	len = strlen(hello_str);
         if (offset < len) {
             if (offset + size > len)
                 size = len - offset;
-            memcpy(buf, (char*)download+offset, size);
+            memcpy(buf, hello_str + offset, size);
         } else
             size = 0;
-
-    }
-
-    if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
-    {
-        string x=path+strlen(Friends_dir_);
-        if (x.find("/")!=string::npos)
+    */
+        _log_echo(string("vkfs_read start: ")+path,log_file);
+        if(strcmp(path, MyInfo_file_p) == 0)
         {
-            char* m=new char[10];
-            x.copy(m,x.find("."));
-
-            int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
-            x.erase(0,x.find("/")+1);
-            if (x.compare(MyInfo_file) == 0)
+            string ret=GetUserInfoText(0);
+            len = ret.size();
+            if (offset < len)
             {
-                string ret=GetUserInfoText(u_id);
-                len = ret.size();
-                if (offset < len)
-                {
-                    size=len;
-                    if (offset + size > len)
-                        size = len-offset;
-                    memcpy(buf, ret.c_str() + offset, size);
-                }
-                    else size=0;
+                size=len;/*
+                if (offset + size > len)
+                    size = len-offset; */
+                memcpy(buf, ret.c_str() , size);//+ offset
             }
+                else size=0;
+        }
 
-            if(x.compare(Wall_file) == 0)
+        if(strcmp(path, Wall_file_p) == 0)
+        {
+            string ret=GetWallText(vkid);
+            len = ret.size();
+            if (offset < len)
             {
-                string ret=GetWallText(u_id);
-                len = ret.size();
-                if (offset < len)
-                {
-                    size=len;
-                    if (offset + size > len)
-                        size = len-offset;
-                    memcpy(buf, ret.c_str() + offset, size);
-                }
-                    else size=0;
+                size=len;/*
+                if (offset + size > len)
+                    size = len-offset; */
+                memcpy(buf, ret.c_str() , size);//+ offset
             }
+                else size=0;
+        }
 
-            if(x.compare(Avatar_file) == 0)
+        if(strcmp(path, Avatar_file_p) == 0)
+        {
+            len = GetAvatarSize(0);
+            if (offset < len)
             {
-                len = GetAvatarSize(u_id);
-                if (offset < len)
-                {
-                    size=len;/*
-                    if (offset + size > len)
-                        size = len-offset; */
-                    memcpy(buf, GetAvatar(u_id) , GetAvatarSize(u_id));//+ offset
-                }
-                    else size=0;
+                size=len;
+                if (offset + size > len)
+                    size = len-offset;
+                memcpy(buf, (char*)GetAvatar(0)+ offset , size);
             }
+                else size=0;
+        }
+
+        if (strncmp(path, MsgInbox_dir_p, strlen(MsgInbox_dir_p)) == 0)
+        {
+            string x=path;
+            if (string(path).find(Messages_file_prefix)==string::npos)
+                return 0;
+
+            int i=x.find(Messages_file_prefix)+strlen(Messages_file_prefix);
+            x.erase(0,i);
+            i=x.find(".");
+            x.erase(i,4);
+            int num=vklib::StrToInt(x);
+
+            string ret=GetPMnText(pminbox,num);
+            len = ret.size();
+
+            if (offset < len)
+            {
+                size=len;
+                memcpy(buf, ret.c_str() , size);
+            }
+                else size=0;
+        }
+
+        if (strncmp(path, MsgOutbox_dir_p, strlen(MsgOutbox_dir_p)) == 0)
+        {
+            string x=path;
+            if (string(path).find(Messages_file_prefix)==string::npos)
+                return 0;
+
+            int i=x.find(Messages_file_prefix)+strlen(Messages_file_prefix);
+            x.erase(0,i);
+            i=x.find(".");
+            x.erase(i,4);
+            int num=vklib::StrToInt(x);
+
+            string ret=GetPMnText(pmoutbox,num);
+            len = ret.size();
+
+            if (offset < len)
+            {
+                //size=len;
+                memcpy(buf, ret.c_str() , size);
+            }
+                else size=0;
+        }
+
+        if (strncmp(path, MyPhotos_dir_p, strlen(MyPhotos_dir_p)) == 0)
+        {
+            string x=path;
+            if (string(path).find(MyPhotos_file_prefix)==string::npos)
+                return 0;
+
+            int i=x.find(MyPhotos_file_prefix)+strlen(MyPhotos_file_prefix);
+            x.erase(0,i);
+            i=x.find(".");
+            x.erase(i,4);
+            int num=vklib::StrToInt(x);
+            void* download;
+            int sz;
+            _log_echo(string("vkfs_read download..."),log_file);
+            vklib::RetrieveURL(&session.CachedFiles,UserProfile(0).Photos->GetNMiniPhotoURL(num-1),download,sz);
+            /*ofstream f("/home/roma/1.jpg");
+            f.write((char*)download,sz);*/
+
+            len = sz;
+            if (offset < len) {
+                if (offset + size > len)
+                    size = len - offset;
+                memcpy(buf, (char*)download+offset, size);
+            } else
+                size = 0;
 
         }
+
+        if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
+        {
+            string x=path+strlen(Friends_dir_);
+            if (x.find("/")!=string::npos)
+            {
+                char* m=new char[10];
+                x.copy(m,x.find("."));
+
+                int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
+                x.erase(0,x.find("/")+1);
+                if (x.compare(MyInfo_file) == 0)
+                {
+                    string ret=GetUserInfoText(u_id);
+                    len = ret.size();
+                    if (offset < len)
+                    {
+                        //size=len;
+                        if (offset + size > len)
+                            size = len-offset;
+                        memcpy(buf, ret.c_str() + offset, size);
+                    }
+                        else size=0;
+                }
+
+                if(x.compare(Wall_file) == 0)
+                {
+                    string ret=GetWallText(u_id);
+                    len = ret.size();
+                    if (offset < len)
+                    {
+                        //size=len;
+                        if (offset + size > len)
+                            size = len-offset;
+                        memcpy(buf, ret.c_str() + offset, size);
+                    }
+                        else size=0;
+                }
+
+                if(x.compare(Avatar_file) == 0)
+                {
+                    len = GetAvatarSize(u_id);
+                    if (offset < len)
+                    {
+                        //size=len;
+                        if (offset + size > len)
+                            size = len-offset;
+                        memcpy(buf, (char*)GetAvatar(u_id)+offset , size);
+                    }
+                        else size=0;
+                }
+
+            }
+        }
+        _log_echo(string("vkfs_read end "),log_file);
+        return size;
+    }catch(string exc)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
     }
-    _log_echo(string("vkfs_read end "),log_file);
-	return size;
 }
 
 static int vkfs_open(const char *path, struct fuse_file_info* fi)
 {
-//	if (strcmp(path, hello_path) != 0)
-//		return -ENOENT;
-    _log_echo(string("vkfs_open start: ")+path,log_file);
-	if ((fi->flags & 3) != O_RDONLY)
-		return -EACCES;
-    _log_echo(string("vkfs_open end "),log_file);
+    try
+    {
+    //	if (strcmp(path, hello_path) != 0)
+    //		return -ENOENT;
+        _log_echo(string("vkfs_open start: ")+path,log_file);
+        if ((fi->flags & 3) != O_RDONLY)
+            return -EACCES;
+        _log_echo(string("vkfs_open end "),log_file);
 	return 0;
+    }catch(string exc)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+    }
 }
 
 int vkfs_opendir (const char *path, struct fuse_file_info *fi)
 {
-    _log_echo(string("vkfs_opendir start: ")+path,log_file);
-    if ((fi->flags & 3) != O_RDONLY)
-		return -EACCES;
-    _log_echo(string("vkfs_opendir end"),log_file);
+    try
+    {
+        _log_echo(string("vkfs_opendir start: ")+path,log_file);
+        if ((fi->flags & 3) != O_RDONLY)
+            return -EACCES;
+        _log_echo(string("vkfs_opendir end"),log_file);
+    }catch(string exc)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+    }
     return 0;
 }
 
@@ -725,5 +779,7 @@ int main(int argc, char* argv[])
     UserProfile(0).RetrievePersonalInfo();
     vkid=session.GetMyVkontakteID();
     cout<<"Your ID: "<<vkid<<"\n";
+
+    //GetAvatar(1364801);
     return fuse_main(argc, argv, &vkfs_opers, NULL);
 }
