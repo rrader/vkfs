@@ -69,6 +69,11 @@ size_t WriteMemoryCallback(char* ptr, size_t size, size_t nmemb)
     return realsize;
 };
 
+VKObject::VKObject()
+{
+    Self=new VKUserProfile(this,0);
+}
+
 int VKObject::Login(std::string EMail,std::string Passwd)
 {
     Easy* request=new Easy;
@@ -97,6 +102,7 @@ int VKObject::Login(std::string EMail,std::string Passwd)
     i=is;
     while (RequestAnswer[i]!=';')
         remixpassword+=RequestAnswer[i++];
+    Self->RetrievePersonalInfo();
     return 0;
 }
 
@@ -281,6 +287,10 @@ int VKUserProfile::RetreiveAvatar()
     return avatarsize;
 }
 
+int VKUserProfile::GetPhotosCount()
+{
+    return ((json::Number&)(profile["ph"]["n"])).Value();
+}
 
 inline std::string replacestr(std::string text, std::string s, std::string d)
 {
@@ -303,7 +313,8 @@ void ProcessLongJSON(string& s)
 
 int VKObject::GetMyVkontakteID()
 {
-    return (((json::Number&)(GetUserProfile(&UserProfiles,this,0).profile["id"])).Value());
+    //return (((json::Number&)(GetUserProfile(&UserProfiles,this,0).profile["id"])).Value());
+    return Self->GetVkontakteID();
 }
 
 //стена
@@ -606,6 +617,8 @@ VKUserProfile::VKUserProfile(VKObject* sess, int id)
     vkid=id;
     session=sess;
     Update=0;
+    Photos=new VKPhotosReader(this);
+    Wall=new VKWallReader;
 }
 
 int VKUserProfile::RetrievePersonalInfo()
@@ -661,6 +674,10 @@ int VKUserProfile::RetrievePersonalInfo()
         RetrievePersonalInfo();
     }*/
     Update=time(NULL);
+    vkid=GetVkontakteID();
+
+    //Photos->RetrievePhotosList(0,GetPhotosCount());
+    Wall->Retrieve(*session,GetVkontakteID(),0,10);
     return 0;
 }
 
@@ -674,35 +691,11 @@ int VKUserProfile::GetVkontakteID()
     return ((json::Number&)(profile["id"])).Value();
 }
 
-int VKUserProfile::GetNPhotoSize(int n)
-{
-    return GetURLFileSize(&session->CachedFiles,GetNPhotoURL(n));
-}
-
-int VKUserProfile::GetNMiniPhotoSize(int n)
-{
-    return GetURLFileSize(&session->CachedFiles,GetNMiniPhotoURL(n));
-}
-
 string VKUserProfile::GetProfileImagePath()
 {
     return ((json::String&)(profile["bp"])).Value();
 }
 
-int VKUserProfile::GetPhotosCount()
-{
-    return ((json::Number&)(profile["ph"]["n"])).Value();
-}
-
-string VKUserProfile::GetNPhotoURL(int n)
-{
-    return ((json::String&)(profile["ph"]["d"][n][2])).Value();
-}
-
-string VKUserProfile::GetNMiniPhotoURL(int n)
-{
-    return ((json::String&)(profile["ph"]["d"][n][1])).Value();
-}
 
 string VKUserProfile::GetFirstName()
 {
@@ -782,6 +775,94 @@ string VKUserProfile::GetCityName()
 string VKUserProfile::GetMiddleName()
 {
     return ((json::String&)(profile["mn"])).Value();
+}
+
+// Photos
+
+VKPhotosReader::VKPhotosReader(VKUserProfile* profile)
+{
+    prof=profile;
+}
+
+
+int VKPhotosReader::RetrievePhotosList(int from, int to)
+{
+    if (time(NULL)-Update<600)
+    {
+        Update=time(NULL);
+        return 1;
+    }
+    Easy* request=new Easy;
+    WriteFunctionFunctor functor(WriteStringCallback);
+    WriteFunction* cb = new curlpp::options::WriteFunction(functor);
+    request->setOpt(cb);
+    request->setOpt(Url("http://userapi.com/data"));
+    request->setOpt(Post(true));
+
+    string y=prof->session->sid+"&act=photos&";
+    if (prof->vkid!=0)
+    {
+        y+="&id="+IntToStr(prof->vkid)+"&";
+    }
+    y+="from="+IntToStr(from)+"&to="+IntToStr(to);
+
+    request->setOpt(PostFields(y));
+    //cout<<y<<'\n';
+
+    request->setOpt(Header(false));
+    request->setOpt(MaxRedirs(0));
+    RequestAnswer="";
+    time_t x=time(NULL);
+    while (time(NULL)-x<0.5);
+    request->perform();
+    x=time(NULL);
+    while (time(NULL)-x<0.5);
+
+    delete request;
+    if (CheckResponse(*prof->session,RequestAnswer)!=0)
+    {
+        return RetrievePhotosList(from,to);
+    }
+
+    ProcessLongJSON(RequestAnswer);
+
+    //cout<<RequestAnswer<<"\n";
+    RequestAnswer="{ \"d\" : "+RequestAnswer+"}";
+    //cout<<RequestAnswer<<'\n';
+    std::stringstream stream(RequestAnswer);
+    jsonresponse.Clear();
+    x=time(NULL);
+    while (time(NULL)-x<0.5);
+    /*try
+    {*/
+      json::Reader::Read(jsonresponse, stream);
+    /*}catch(...)
+    {
+        cerr<<"Trying...";
+        RetrievePersonalInfo();
+    }*/
+    Update=time(NULL);
+    return 0;
+}
+
+int VKPhotosReader::GetNPhotoSize(int n)
+{
+    return GetURLFileSize(&prof->session->CachedFiles,GetNPhotoURL(n));
+}
+
+int VKPhotosReader::GetNMiniPhotoSize(int n)
+{
+    return GetURLFileSize(&prof->session->CachedFiles,GetNMiniPhotoURL(n));
+}
+
+string VKPhotosReader::GetNPhotoURL(int n)
+{
+    return ((json::String&)(jsonresponse["d"][n][2])).Value();
+}
+
+string VKPhotosReader::GetNMiniPhotoURL(int n)
+{
+    return ((json::String&)(jsonresponse["d"][n][1])).Value();
 }
 
 }

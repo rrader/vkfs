@@ -23,15 +23,15 @@ const char *MyInfo_file = "Обо мне";
 
 const char *Msg_dir = "/Мои сообщения";*/
 const char *Info_dir = "/My_Info";
-const char *MyInfo_file_p = "/My_Info/Profile";
-const char *Wall_file_p = "/My_Info/Wall";
+const char *MyInfo_file_p = "/My_Info/Profile.txt";
+const char *Wall_file_p = "/My_Info/Wall.txt";
 const char *Avatar_file_p = "/My_Info/avatar.jpg";
 const char *MyPhotos_dir = "Photos";
 const char *MyPhotos_dir_p = "/My_Info/Photos";
 const char *MyPhotos_dir_p_f = "/My_Info/Photos/";
 const char *MyPhotos_file_prefix = "Photo_";
-const char *MyInfo_file = "Profile";
-const char *Wall_file = "Wall";
+const char *MyInfo_file = "Profile.txt";
+const char *Wall_file = "Wall.txt";
 const char *Avatar_file = "avatar.jpg";
 
 const char *Friends_dir = "/Friends";
@@ -61,15 +61,10 @@ string email;
 string passwd;
 int vkid;
 
-string WallText;
 time_t WallTextUpdate;
-
 time_t FriendsUpdate;
 time_t FavoritesUpdate;
-
-string MyInfoText;
 time_t MyInfoTextUpdate;
-
 time_t AvatarUpdate,AvatarSizeUpdate;
 int avatarsize;
 
@@ -105,113 +100,87 @@ void GetPrivateMessages(vklib::VKPMReader& pm)
     }
 }
 
-string GetWallText()
-{
-    time_t now = time (NULL);
-
-    if (now-WallTextUpdate>60)
-    {
-        vklib::VKWallReader wall;
-        wall.Retrieve(session,vkid,0,10);
-        string ret="Всего сообщений: "+IntToStr(wall.MessageCount())+'\n';
-        ret+="Сообщения 1-10:\n\n";
-        for (int i=0;i<10;i++)
-        {
-            ret+="От: "+wall.GetMessageSenderName(i)+"\n";
-            ret+=wall.GetMessageText(i)+"\n";
-            ret+="=========================================\n\n";
-        }
-        WallText=ret;
-        WallTextUpdate=time(NULL);
-    }
-    return WallText;
-}
-
 inline vklib::VKUserProfile& UserProfile(int id)
 {
+    vklib::GetUserProfile(&session.UserProfiles,&session,id).RetrievePersonalInfo();
     return vklib::GetUserProfile(&session.UserProfiles,&session,id);
+}
+
+string GetWallText(int id)
+{
+    vklib::VKUserProfile& me=UserProfile(id);
+    me.RetrievePersonalInfo();
+    string ret="Всего сообщений: "+IntToStr(me.Wall->MessageCount())+'\n';
+    ret+="Сообщения 1-10:\n\n";
+    for (int i=0;i<10;i++)
+    {
+        ret+="От: "+me.Wall->GetMessageSenderName(i)+"\n";
+        ret+=me.Wall->GetMessageText(i)+"\n";
+        ret+="=========================================\n\n";
+    }
+    return ret;
 }
 
 string GetUserInfoText(int id)
 {
-    /*time_t now = time (NULL);
+    vklib::VKUserProfile& me=UserProfile(id);
+    me.RetrievePersonalInfo();
+    string ret=me.GetFirstName()+" "+me.GetMiddleName()+" "+me.GetLastName()+"\n---------------------------\n";
+    ret+="Статус: "+me.GetStatus()+"\n\n";
+    ret+="Местоположение: "+me.GetCountryName()+", "+me.GetCityName()+"\n";
+    ret+="Дата рождения: "+IntToStr(me.GetUserBirdthDay())+"."+IntToStr(me.GetUserBirdthMonth())+"."+IntToStr(me.GetUserBirdthYear())+"\n";
+    ret+="Пол: ";
+    switch (me.GetSex())
+    {
+        case 1:ret+="Женский";break;
+        case 2:ret+="Мужской";break;
+    }
+    ret+="\nГород рождения: "+me.GetBirdthCityName()+"\n";
+    ret+="Семейное положение: ";
+    switch (me.GetMaritalStatus())
+    {
+        case 1:ret+="Не женат"; break;
+        case 2:ret+="Есть подруга"; break;
+        case 3:ret+="Обручен";  break;
+        case 4:ret+="Женат"; break;
+        case 5:ret+="Всё сложно"; break;
+        case 6:ret+="В активном поиске"; break;
+    }
+    ret+="\nПолитические взгляды: ";
+    switch (me.GetPoliticalStatus())
+    {
+        case 1:ret+="коммунистические"; break;
+        case 2:ret+="социалистические"; break;
+        case 3:ret+="умеренные"; break;
+        case 4:ret+="либеральные"; break;
+        case 5:ret+="консервативные"; break;
+        case 6:ret+="монархические"; break;
+        case 7:ret+="ультраконсервативные"; break;
+        case 8:ret+="индифферентные"; break;
+    }
+    ret+="\nОбразование: ";
+    for(int i=0; i<=sizeof(me.GetEducation(i))-1; i++)
+    {
+       if(i<sizeof(me.GetEducation(i))-1)
+        ret+=me.GetEducation(i)+" | ";
+       else
+        ret+=me.GetEducation(i);
+    }
 
-    if (now-MyInfoTextUpdate>60)
-    {*/
-        vklib::VKUserProfile& me=UserProfile(id);
-        me.RetrievePersonalInfo();
-        string ret=me.GetFirstName()+" "+me.GetMiddleName()+" "+me.GetLastName()+"\n---------------------------\n";
-        ret+="Статус: "+me.GetStatus()+"\n\n";
-        ret+="Местоположение: "+me.GetCountryName()+", "+me.GetCityName()+"\n";
-        ret+="Дата рождения: "+IntToStr(me.GetUserBirdthDay())+"."+IntToStr(me.GetUserBirdthMonth())+"."+IntToStr(me.GetUserBirdthYear())+"\n";
-        ret+="Пол: ";
-        switch (me.GetSex())
-        {
-            case 1:ret+="Женский";break;
-            case 2:ret+="Мужской";break;
-        }
-        ret+="\nГород рождения: "+me.GetBirdthCityName()+"\n";
-        ret+="Семейное положение: ";
-        switch (me.GetMaritalStatus())
-        {
-            case 1:ret+="Не женат"; break;
-            case 2:ret+="Есть подруга"; break;
-            case 3:ret+="Обручен";  break;
-            case 4:ret+="Женат"; break;
-            case 5:ret+="Всё сложно"; break;
-            case 6:ret+="В активном поиске"; break;
-        }
-        ret+="\nПолитические взгляды: ";
-        switch (me.GetPoliticalStatus())
-        {
-            case 1:ret+="коммунистические"; break;
-            case 2:ret+="социалистические"; break;
-            case 3:ret+="умеренные"; break;
-            case 4:ret+="либеральные"; break;
-            case 5:ret+="консервативные"; break;
-            case 6:ret+="монархические"; break;
-            case 7:ret+="ультраконсервативные"; break;
-            case 8:ret+="индифферентные"; break;
-        }
-        ret+="\nОбразование: ";
-        for(int i=0; i<=sizeof(me.GetEducation(i))-1; i++)
-        {
-           if(i<sizeof(me.GetEducation(i))-1)
-            ret+=me.GetEducation(i)+" | ";
-           else
-            ret+=me.GetEducation(i);
-        }
+    ret+="\n";
 
-        ret+="\n";
-
-        MyInfoText=ret;
-        MyInfoTextUpdate=time(NULL);
-    //}
-    return MyInfoText;
+    return ret;
 }
 
 
 int GetAvatarSize(int id)
 {
-    time_t now = time (NULL);
-
-    if (now-AvatarSizeUpdate>600)
-    {
-        avatarsize=UserProfile(id).GetAvatarSize();
-        AvatarSizeUpdate=time(NULL);
-    }
-    return avatarsize;
+    return UserProfile(id).GetAvatarSize();
 }
 
 void* GetAvatar(int id)
 {
-    time_t now = time (NULL);
-
-    if (now-AvatarUpdate>600)
-    {
-        UserProfile(id).RetreiveAvatar();
-        AvatarUpdate=time(NULL);
-    }
+    UserProfile(id).RetreiveAvatar();
     return UserProfile(id).avatar;
 }
 
@@ -312,7 +281,8 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
         if (x.find(".jpg")!=string::npos)
         {
             x.erase(i,4);
-            stbuf->st_size = UserProfile(0).GetNMiniPhotoSize(vklib::StrToInt(x)-1);
+            UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
+            stbuf->st_size = UserProfile(0).Photos->GetNMiniPhotoSize(vklib::StrToInt(x)-1);
         }
 	} else if (strcmp(path, MyInfo_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
@@ -322,14 +292,15 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
 	} else if (strcmp(path, Wall_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		string ret=GetWallText();
+		string ret=GetWallText(vkid);
 		stbuf->st_size = ret.size()+1;
 	} else if (strcmp(path, Avatar_file_p) == 0) {
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = GetAvatarSize(0);
 
-	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0) {
+	} else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
+	{
         string x=path+strlen(Friends_dir_);
         //_log_echo(string("vkfs_getattr ############### ")+x,log_file);
         if (x.find("/")!=string::npos)
@@ -337,13 +308,29 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
             char* m=new char[10];
             x.copy(m,x.find("."));
 
-            int u_id=vklib::StrToInt(m);
+            int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
             x.erase(0,x.find("/")+1);
             if (x.compare(MyInfo_file) == 0) {
                 stbuf->st_mode = S_IFREG | 0444;
                 stbuf->st_nlink = 1;
                 string ret=GetUserInfoText(u_id);
                 stbuf->st_size = ret.size()+1;
+            }
+            if (x.compare(Wall_file) == 0) {
+                stbuf->st_mode = S_IFREG | 0444;
+                stbuf->st_nlink = 1;
+                string ret=GetWallText(u_id);
+                stbuf->st_size = ret.size()+1;
+            }
+            if (x.compare(Avatar_file) == 0) {
+                stbuf->st_mode = S_IFREG | 0444;
+                stbuf->st_nlink = 1;
+                stbuf->st_size = GetAvatarSize(u_id);
+            }
+
+            if (x.compare(MyPhotos_dir) == 0) {
+                stbuf->st_mode = S_IFDIR | 0755;
+                stbuf->st_nlink = 1;
             }
         }else
         {
@@ -452,6 +439,7 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
         res=filler(h, ".", NULL, 0);
         res=filler(h, "..", NULL, 0);
         string x="";
+        UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
         for(int i=0;i<UserProfile(0).GetPhotosCount();i++)//
         {
             x=MyPhotos_file_prefix+IntToStr(i+1)+".jpg";
@@ -544,7 +532,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
 
 	if(strcmp(path, Wall_file_p) == 0)
 	{
-        string ret=GetWallText();
+        string ret=GetWallText(vkid);
 	    len = ret.size();
 	    if (offset < len)
 	    {
@@ -629,7 +617,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
         void* download;
         int sz;
         _log_echo(string("vkfs_read download..."),log_file);
-        vklib::RetrieveURL(&session.CachedFiles,UserProfile(0).GetNMiniPhotoURL(num-1),download,sz);
+        vklib::RetrieveURL(&session.CachedFiles,UserProfile(0).Photos->GetNMiniPhotoURL(num-1),download,sz);
         /*ofstream f("/home/roma/1.jpg");
         f.write((char*)download,sz);*/
 
@@ -653,7 +641,8 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
 
             int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
             x.erase(0,x.find("/")+1);
-            if (x.compare(MyInfo_file) == 0) {
+            if (x.compare(MyInfo_file) == 0)
+            {
                 string ret=GetUserInfoText(u_id);
                 len = ret.size();
                 if (offset < len)
@@ -665,6 +654,34 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
                 }
                     else size=0;
             }
+
+            if(x.compare(Wall_file) == 0)
+            {
+                string ret=GetWallText(u_id);
+                len = ret.size();
+                if (offset < len)
+                {
+                    size=len;
+                    if (offset + size > len)
+                        size = len-offset;
+                    memcpy(buf, ret.c_str() + offset, size);
+                }
+                    else size=0;
+            }
+
+            if(x.compare(Avatar_file) == 0)
+            {
+                len = GetAvatarSize(u_id);
+                if (offset < len)
+                {
+                    size=len;/*
+                    if (offset + size > len)
+                        size = len-offset; */
+                    memcpy(buf, GetAvatar(u_id) , GetAvatarSize(u_id));//+ offset
+                }
+                    else size=0;
+            }
+
         }
     }
     _log_echo(string("vkfs_read end "),log_file);

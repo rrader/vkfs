@@ -20,13 +20,18 @@ namespace vklib
     };
 
     struct UserProfileCacheStruct;
+    class VKPhotosReader;
+    class VKUserProfile;
+    class VKWallReader;
 
     class VKObject
     {
     public:
+        VKObject();
         int Login(std::string EMail,std::string Passwd);
         int GetMyVkontakteID();
 
+        VKUserProfile* Self;
         std::string sid;
         std::string remixpassword;
         std::vector<FileCacheStruct> CachedFiles;
@@ -62,19 +67,32 @@ namespace vklib
         int GetAvatarSize();
         int RetreiveAvatar();
 
-        //Photos
         int GetPhotosCount();
-        std::string GetNPhotoURL(int n);
-        std::string GetNMiniPhotoURL(int n);
-        int GetNPhotoSize(int n);
-        int GetNMiniPhotoSize(int n);
 
         json::Object profile;
         void* avatar;
         int avatarsize;
-    private:
-        int vkid;
         VKObject* session;
+        int vkid;
+        VKPhotosReader* Photos;
+        VKWallReader* Wall;
+    private:
+        time_t Update;
+    };
+
+    class VKPhotosReader
+    {
+    public:
+        VKPhotosReader(VKUserProfile* profile);
+
+        int RetrievePhotosList(int from, int to);
+        std::string GetNPhotoURL(int n);
+        std::string GetNMiniPhotoURL(int n);
+        int GetNPhotoSize(int n);
+        int GetNMiniPhotoSize(int n);
+    private:
+        VKUserProfile* prof;
+        json::Object jsonresponse;
         time_t Update;
     };
 
