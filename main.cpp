@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ncurses.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Easy.hpp>
@@ -86,90 +89,139 @@ string GetPMnText(vklib::VKPMReader& pm, int n)
 
 void GetPrivateMessages(vklib::VKPMReader& pm)
 {
-    time_t now = time (NULL);
-
-    if (now-pm.PMUpdate>60)
+    try
     {
-        _log_echo(string("GetPrivateMessages 1"),log_file);
-        pm.Retrieve(session,0,0,1);
-        _log_echo(string("GetPrivateMessages 2"),log_file);
-        int count=GetMsgCountInDirectory(pm.MessageCount());
-        pm.Retrieve(session,0,0,count);
-        _log_echo(string("GetPrivateMessages 3"),log_file);
-        pm.PMUpdate=time(NULL);
+        time_t now = time (NULL);
+
+        if (now-pm.PMUpdate>60)
+        {
+            _log_echo(string("GetPrivateMessages 1"),log_file);
+            pm.Retrieve(session,0,0,1);
+            _log_echo(string("GetPrivateMessages 2"),log_file);
+            int count=GetMsgCountInDirectory(pm.MessageCount());
+            pm.Retrieve(session,0,0,count);
+            _log_echo(string("GetPrivateMessages 3"),log_file);
+            pm.PMUpdate=time(NULL);
+        }
+    }catch(string exc)
+    {
+        _log_echo(string("GetPrivateMessages EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("GetPrivateMessages EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("GetPrivateMessages EXCEPTION!"),log_file);
     }
 }
 
 inline vklib::VKUserProfile& UserProfile(int id)
 {
-    vklib::GetUserProfile(&session.UserProfiles,&session,id).RetrievePersonalInfo();
-    return vklib::GetUserProfile(&session.UserProfiles,&session,id);
+    try
+    {
+        vklib::GetUserProfile(&session.UserProfiles,&session,id).RetrievePersonalInfo();
+        return vklib::GetUserProfile(&session.UserProfiles,&session,id);
+    }catch(string exc)
+    {
+        _log_echo(string("UserProfile EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("UserProfile EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("UserProfile EXCEPTION!"),log_file);
+    }
 }
 
 string GetWallText(int id)
 {
-    vklib::VKUserProfile& me=UserProfile(id);
-    me.RetrievePersonalInfo();
-    string ret="Всего сообщений: "+IntToStr(me.Wall->MessageCount())+'\n';
-    ret+="Сообщения 1-10:\n\n";
-    for (int i=0;i<10;i++)
+    try
     {
-        ret+="От: "+me.Wall->GetMessageSenderName(i)+"\n";
-        ret+=me.Wall->GetMessageText(i)+"\n";
-        ret+="=========================================\n\n";
+        vklib::VKUserProfile& me=UserProfile(id);
+        me.RetrievePersonalInfo();
+        string ret="Всего сообщений: "+IntToStr(me.Wall->MessageCount())+'\n';
+        ret+="Сообщения 1-10:\n\n";
+        for (int i=0;i<10;i++)
+        {
+            ret+="От: "+me.Wall->GetMessageSenderName(i)+"\n";
+            ret+=me.Wall->GetMessageText(i)+"\n";
+            ret+="=========================================\n\n";
+        }
+        return ret;
+    }catch(string exc)
+    {
+        _log_echo(string("GetWallText EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("GetWallText EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("GetWallText EXCEPTION!"),log_file);
     }
-    return ret;
 }
 
 string GetUserInfoText(int id)
 {
-    vklib::VKUserProfile& me=UserProfile(id);
-    me.RetrievePersonalInfo();
-    string ret=me.GetFirstName()+" "+me.GetMiddleName()+" "+me.GetLastName()+"\n---------------------------\n";
-    ret+="Статус: "+me.GetStatus()+"\n\n";
-    ret+="Местоположение: "+me.GetCountryName()+", "+me.GetCityName()+"\n";
-    ret+="Дата рождения: "+IntToStr(me.GetUserBirdthDay())+"."+IntToStr(me.GetUserBirdthMonth())+"."+IntToStr(me.GetUserBirdthYear())+"\n";
-    ret+="Пол: ";
-    switch (me.GetSex())
+    try
     {
-        case 1:ret+="Женский";break;
-        case 2:ret+="Мужской";break;
-    }
-    ret+="\nГород рождения: "+me.GetBirdthCityName()+"\n";
-    ret+="Семейное положение: ";
-    switch (me.GetMaritalStatus())
-    {
-        case 1:ret+="Не женат"; break;
-        case 2:ret+="Есть подруга"; break;
-        case 3:ret+="Обручен";  break;
-        case 4:ret+="Женат"; break;
-        case 5:ret+="Всё сложно"; break;
-        case 6:ret+="В активном поиске"; break;
-    }
-    ret+="\nПолитические взгляды: ";
-    switch (me.GetPoliticalStatus())
-    {
-        case 1:ret+="коммунистические"; break;
-        case 2:ret+="социалистические"; break;
-        case 3:ret+="умеренные"; break;
-        case 4:ret+="либеральные"; break;
-        case 5:ret+="консервативные"; break;
-        case 6:ret+="монархические"; break;
-        case 7:ret+="ультраконсервативные"; break;
-        case 8:ret+="индифферентные"; break;
-    }
-    ret+="\nОбразование: ";
-    for(int i=0; i<=sizeof(me.GetEducation(i))-1; i++)
-    {
-       if(i<sizeof(me.GetEducation(i))-1)
-        ret+=me.GetEducation(i)+" | ";
-       else
-        ret+=me.GetEducation(i);
-    }
+        vklib::VKUserProfile& me=UserProfile(id);
+        me.RetrievePersonalInfo();
+        string ret=me.GetFirstName()+" "+me.GetMiddleName()+" "+me.GetLastName()+"\n---------------------------\n";
+        ret+="Статус: "+me.GetStatus()+"\n\n";
+        ret+="Местоположение: "+me.GetCountryName()+", "+me.GetCityName()+"\n";
+        ret+="Дата рождения: "+IntToStr(me.GetUserBirdthDay())+"."+IntToStr(me.GetUserBirdthMonth())+"."+IntToStr(me.GetUserBirdthYear())+"\n";
+        ret+="Пол: ";
+        switch (me.GetSex())
+        {
+            case 1:ret+="Женский";break;
+            case 2:ret+="Мужской";break;
+        }
+        ret+="\nГород рождения: "+me.GetBirdthCityName()+"\n";
+        ret+="Семейное положение: ";
+        switch (me.GetMaritalStatus())
+        {
+            case 1:ret+="Не женат"; break;
+            case 2:ret+="Есть подруга"; break;
+            case 3:ret+="Обручен";  break;
+            case 4:ret+="Женат"; break;
+            case 5:ret+="Всё сложно"; break;
+            case 6:ret+="В активном поиске"; break;
+        }
+        ret+="\nПолитические взгляды: ";
+        switch (me.GetPoliticalStatus())
+        {
+            case 1:ret+="коммунистические"; break;
+            case 2:ret+="социалистические"; break;
+            case 3:ret+="умеренные"; break;
+            case 4:ret+="либеральные"; break;
+            case 5:ret+="консервативные"; break;
+            case 6:ret+="монархические"; break;
+            case 7:ret+="ультраконсервативные"; break;
+            case 8:ret+="индифферентные"; break;
+        }
+        ret+="\nОбразование: ";
+        for(int i=0; i<=sizeof(me.GetEducation(i))-1; i++)
+        {
+           if(i<sizeof(me.GetEducation(i))-1)
+            ret+=me.GetEducation(i)+" | ";
+           else
+            ret+=me.GetEducation(i);
+        }
 
-    ret+="\n";
+        ret+="\n";
 
-    return ret;
+        return ret;
+
+    }catch(string exc)
+    {
+        _log_echo(string("GetUserInfoText EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("GetUserInfoText EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("GetUserInfoText EXCEPTION!"),log_file);
+    }
 }
 
 
@@ -180,8 +232,20 @@ int GetAvatarSize(int id)
 
 void* GetAvatar(int id)
 {
-    UserProfile(id).RetreiveAvatar();
-    return UserProfile(id).avatar;
+    try
+    {
+        UserProfile(id).RetreiveAvatar();
+        return UserProfile(id).avatar;
+    }catch(string exc)
+    {
+        _log_echo(string("GetAvatar EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("GetAvatar EXCEPTION! : ")+exc,log_file);
+    }catch(...)
+    {
+        _log_echo(string("GetAvatar EXCEPTION!"),log_file);
+    }
 }
 
 static int vkfs_getattr(const char *path, struct stat *stbuf)
@@ -333,6 +397,23 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
                 if (x.compare(MyPhotos_dir) == 0) {
                     stbuf->st_mode = S_IFDIR | 0755;
                     stbuf->st_nlink = 1;
+                }else
+                if(strncmp(x.c_str(),MyPhotos_dir,strlen(MyPhotos_dir)) == 0)
+                {
+                    stbuf->st_mode = S_IFREG | 0444;
+                    stbuf->st_nlink = 1;
+                    x.erase(0,x.find("/")+1);
+                    int i=x.find(".");
+                    if (x.find(".jpg")!=string::npos)
+                    {
+                        x.erase(i,4);
+                        x.erase(0,strlen(MyPhotos_file_prefix));
+                        UserProfile(u_id).Photos->RetrievePhotosList(0,UserProfile(u_id).GetPhotosCount());
+                        _log_echo(string("vkfs_getattr ############### ")+x,log_file);
+                        _log_echo(string("vkfs_getattr ############### ")+IntToStr(u_id),log_file);
+                        _log_echo(string("vkfs_getattr ############### ")+UserProfile(u_id).Photos->GetNMiniPhotoURL(vklib::StrToInt(x)-1),log_file);
+                        stbuf->st_size = UserProfile(u_id).Photos->GetNMiniPhotoSize(vklib::StrToInt(x)-1);
+                    }
                 }
             }else
             {
@@ -347,10 +428,13 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
         return res;
     }catch(string exc)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+        _log_echo(string("vkfs_getattr EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("vkfs_getattr EXCEPTION! : ")+exc,log_file);
     }catch(...)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+        _log_echo(string("vkfs_getattr EXCEPTION!"),log_file);
     }
 }
 
@@ -365,10 +449,13 @@ int UserProfileFiller(const char *path, fuse_dirh_t& h, fuse_dirfil_t& filler, i
         return res;
     }catch(string exc)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+        _log_echo(string("UserProfileFiller EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("UserProfileFiller EXCEPTION! : ")+exc,log_file);
     }catch(...)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+        _log_echo(string("UserProfileFiller EXCEPTION!"),log_file);
     }
 }
 
@@ -474,6 +561,27 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
                 res=filler(h, ".", NULL, 0);
                 res=filler(h, "..", NULL, 0);
                 UserProfileFiller(path,h,filler,res);
+            }else
+            {
+
+                char* m=new char[10];
+                x.copy(m,x.find("."));
+
+                int u_id=fr.GetFriendID(vklib::StrToInt(m)-1);
+                x.erase(0,x.find("/")+1);
+                if (x.compare(MyPhotos_dir) == 0)
+                {
+                    res=filler(h, ".", NULL, 0);
+                    res=filler(h, "..", NULL, 0);
+                    ;
+                    string r="";
+                    UserProfile(u_id).Photos->RetrievePhotosList(0,UserProfile(u_id).GetPhotosCount());
+                    for(int i=0;i<UserProfile(u_id).GetPhotosCount();i++)//
+                    {
+                        r=MyPhotos_file_prefix+IntToStr(i+1)+".jpg";
+                        res=filler(h, r.c_str(), NULL, 0);
+                    }
+                }
             }
         }
 
@@ -518,10 +626,13 @@ static int vkfs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
             return res;
     }catch(string exc)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+        _log_echo(string("vkfs_getdir EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("vkfs_getdir EXCEPTION! : ")+exc,log_file);
     }catch(...)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+        _log_echo(string("vkfs_getdir EXCEPTION!"),log_file);
     }
 }
 
@@ -711,16 +822,51 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
                         else size=0;
                 }
 
+                if(strncmp(x.c_str(),MyPhotos_dir,strlen(MyPhotos_dir)) == 0)
+                {
+                    x.erase(0,x.find("/")+1);
+
+
+
+                    if (string(path).find(MyPhotos_file_prefix)==string::npos)
+                        return 0;
+
+                    int i=x.find(MyPhotos_file_prefix)+strlen(MyPhotos_file_prefix);
+                    x.erase(0,i);
+                    i=x.find(".");
+                    x.erase(i,4);
+                    int num=vklib::StrToInt(x);
+                    void* download;
+                    int sz;
+                    _log_echo(string("vkfs_read download..."),log_file);
+                    vklib::RetrieveURL(&session.CachedFiles,UserProfile(u_id).Photos->GetNMiniPhotoURL(num-1),download,sz);
+                    /*ofstream f("/home/roma/1.jpg");
+                    f.write((char*)download,sz);*/
+
+                    len = sz;
+                    if (offset < len) {
+                        if (offset + size > len)
+                            size = len - offset;
+                        memcpy(buf, (char*)download+offset, size);
+                    } else
+                        size = 0;
+
+
+                }
+
             }
         }
         _log_echo(string("vkfs_read end "),log_file);
         return size;
     }catch(string exc)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION! : ")+exc,log_file);
+        _log_echo(string("vkfs_read EXCEPTION! : ")+exc,log_file);
+    }catch(char* exc)
+    {
+        _log_echo(string("vkfs_read EXCEPTION! : ")+exc,log_file);
     }catch(...)
     {
-        _log_echo(string("vkfs_opendir EXCEPTION!"),log_file);
+        _log_echo(string("vkfs_read EXCEPTION!"),log_file);
     }
 }
 
@@ -764,6 +910,16 @@ int vkfs_opendir (const char *path, struct fuse_file_info *fi)
 
 static struct fuse_operations vkfs_opers;
 
+void setecho( bool on = true )
+{
+  struct termios settings;
+  tcgetattr( STDIN_FILENO, &settings );
+  settings.c_lflag = on
+                   ? (settings.c_lflag |   ECHO )
+                   : (settings.c_lflag & ~(ECHO));
+  tcsetattr( STDIN_FILENO, TCSANOW, &settings );
+}
+
 int main(int argc, char* argv[])
 {
     vkfs_opers.getattr	= vkfs_getattr;
@@ -774,12 +930,17 @@ int main(int argc, char* argv[])
     cout<<"e-mail:";
     cin>>email;
     cout<<"password:";
+    cout.flush();
+    passwd="";
+
+    setecho(false);
     cin>>passwd;
+    setecho(true);
+    cout<<'\n';
     session.Login(email,passwd);
     UserProfile(0).RetrievePersonalInfo();
     vkid=session.GetMyVkontakteID();
     cout<<"Your ID: "<<vkid<<"\n";
 
-    //GetAvatar(1364801);
     return fuse_main(argc, argv, &vkfs_opers, NULL);
 }

@@ -7,7 +7,7 @@
 #include "json/writer.h"
 #include "json/elements.h"
 
-#define log_file "/home/roma/projects/vkfs/bin/Debug/vkfs_log.txt"
+#define log_file "~/vkfs_log.txt"
 
 namespace vklib
 {
