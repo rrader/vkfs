@@ -117,7 +117,7 @@ int CheckResponse(VKObject& session,std::string rp)
         request->setOpt(Url("http://login.userapi.com/auth"));
         request->setOpt(Post(true));
 
-        string params="login=auto&site=5323&remixpassword="+session.remixpassword;
+        string params="login=auto&site=2&remixpassword="+session.remixpassword;
         request->setOpt(PostFields(params));
 
         request->setOpt(Header(true));
@@ -706,7 +706,6 @@ string VKUserProfile::GetProfileImagePath()
     return ((json::String&)(profile["bp"])).Value();
 }
 
-
 string VKUserProfile::GetFirstName()
 {
     return ((json::String&)(profile["fn"])).Value();
@@ -740,11 +739,6 @@ int VKUserProfile::GetCountryID()
 string VKUserProfile::GetCountryName()
 {
     return ((json::String&)(profile["ht"]["con"])).Value();
-}
-
-string VKUserProfile::GetBirdthCityName()
-{
-    return ((json::String&)(profile["by"])).Value();
 }
 
 int VKUserProfile::GetCityID()

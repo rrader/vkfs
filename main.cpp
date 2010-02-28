@@ -175,7 +175,7 @@ string GetUserInfoText(int id)
             case 1:ret+="Женский";break;
             case 2:ret+="Мужской";break;
         }
-        ret+="\nГород рождения: "+me.GetBirdthCityName()+"\n";
+        ret+="\nГород рождения: "+me.GetCityName()+"\n";
         ret+="Семейное положение: ";
         switch (me.GetMaritalStatus())
         {

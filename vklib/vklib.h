@@ -57,7 +57,6 @@ namespace vklib
         std::string GetCountryName();
         int GetCityID();
         std::string GetCityName();
-        std::string GetBirdthCityName();
         int GetMaritalStatus();
         int GetPoliticalStatus();
         int GetUserBirdthDay();
