@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <ncurses.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -368,7 +367,6 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
         } else if (strncmp(path, Friends_dir_, strlen(Friends_dir_)) == 0)
         {
             string x=path+strlen(Friends_dir_);
-            //_log_echo(string("vkfs_getattr ############### ")+x,log_file);
             if (x.find("/")!=string::npos)
             {
                 char* m=new char[10];
@@ -409,9 +407,9 @@ static int vkfs_getattr(const char *path, struct stat *stbuf)
                         x.erase(i,4);
                         x.erase(0,strlen(MyPhotos_file_prefix));
                         UserProfile(u_id).Photos->RetrievePhotosList(0,UserProfile(u_id).GetPhotosCount());
-                        _log_echo(string("vkfs_getattr ############### ")+x,log_file);
-                        _log_echo(string("vkfs_getattr ############### ")+IntToStr(u_id),log_file);
-                        _log_echo(string("vkfs_getattr ############### ")+UserProfile(u_id).Photos->GetNMiniPhotoURL(vklib::StrToInt(x)-1),log_file);
+                        _log_echo(string("vkfs_getattr Photos: number: ")+x,log_file);
+                        _log_echo(string("vkfs_getattr Photos: u_id:   ")+IntToStr(u_id),log_file);
+                        _log_echo(string("vkfs_getattr Photos: URL:    ")+UserProfile(u_id).Photos->GetNMiniPhotoURL(vklib::StrToInt(x)-1),log_file);
                         stbuf->st_size = UserProfile(u_id).Photos->GetNMiniPhotoSize(vklib::StrToInt(x)-1);
                     }
                 }
@@ -757,6 +755,8 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
             void* download;
             int sz;
             _log_echo(string("vkfs_read download..."),log_file);
+
+            UserProfile(0).Photos->RetrievePhotosList(0,UserProfile(0).GetPhotosCount());
             vklib::RetrieveURL(&session.CachedFiles,UserProfile(0).Photos->GetNMiniPhotoURL(num-1),download,sz);
             /*ofstream f("/home/roma/1.jpg");
             f.write((char*)download,sz);*/
@@ -839,6 +839,7 @@ static int vkfs_read(const char *path, char *buf, size_t size, off_t offset, str
                     void* download;
                     int sz;
                     _log_echo(string("vkfs_read download..."),log_file);
+                    UserProfile(u_id).Photos->RetrievePhotosList(0,UserProfile(u_id).GetPhotosCount());
                     vklib::RetrieveURL(&session.CachedFiles,UserProfile(u_id).Photos->GetNMiniPhotoURL(num-1),download,sz);
                     /*ofstream f("/home/roma/1.jpg");
                     f.write((char*)download,sz);*/

@@ -446,17 +446,17 @@ int VKPMReader::Retrieve(VKObject& session,int uid,int from, int to)
         return Retrieve(session,uid,from,to);
     }
 
-    try
-    {
+//    try
+//    {
         ProcessLongJSON(RequestAnswer);
         std::stringstream stream(RequestAnswer);
         jsonresponse.Clear();
         json::Reader::Read(jsonresponse, stream);
-    }catch(...)
-    {
-        cerr<<"Trying...";
-        Retrieve(session,uid,from,to);
-    }
+//    }catch(...)
+//    {
+//        cerr<<"Trying...";
+//        Retrieve(session,uid,from,to);
+//    }
     delete wall;
 }
 
@@ -540,19 +540,19 @@ int VKFriendsReader::Retrieve(int uid,int from, int to)
         return Retrieve(uid,from,to);
     }
 
-    try
-    {
+//    try
+//    {
         ProcessLongJSON(RequestAnswer);
         RequestAnswer="{ \"d\" : "+RequestAnswer+" }";
         //_log_echo(RequestAnswer,log_file);
         std::stringstream stream(RequestAnswer);
         jsonresponse.Clear();
         json::Reader::Read(jsonresponse, stream);
-    }catch(...)
-    {
-        _log_echo("Trying...",log_file);cerr<<"Trying...";
-        Retrieve(uid,from,to);
-    }
+//    }catch(...)
+//    {
+//        _log_echo("Trying...",log_file);cerr<<"Trying...";
+//        Retrieve(uid,from,to);
+//    }
     delete wall;
 }
 
@@ -594,18 +594,18 @@ int VKFavoritesReader::Retrieve(int from, int to)
         return Retrieve(from,to);
     }
 
-    try
-    {
+//    try
+//    {
         ProcessLongJSON(RequestAnswer);
         _log_echo(RequestAnswer,log_file);
         std::stringstream stream(RequestAnswer);
         jsonresponse.Clear();
         json::Reader::Read(jsonresponse, stream);
-    }catch(...)
-    {
-        _log_echo("Trying...",log_file);cerr<<"Trying...";
-        Retrieve(from,to);
-    }
+//    }catch(...)
+//    {
+//        _log_echo("Trying...",log_file);cerr<<"Trying...";
+//        Retrieve(from,to);
+//    }
     delete wall;
 }
 

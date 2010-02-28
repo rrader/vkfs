@@ -1,5 +1,5 @@
 vkfs: obj/main.o obj/vklib.o
-	g++ -d -lcurlpp -lfuse -lcurses -w obj/main.o obj/vklib.o -o bin/vkfs
+	g++ -d -lcurlpp -lfuse -w obj/main.o obj/vklib.o -o bin/vkfs
 
 obj/main.o: main.cpp
 	g++ -w -c main.cpp -o obj/main.o -D_FILE_OFFSET_BITS=64
