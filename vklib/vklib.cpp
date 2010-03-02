@@ -5,6 +5,7 @@
 #include <curlpp/Infos.hpp>
 #include <stdlib.h>
 #include <sstream>
+#include <pcre.h>
 
 #include "vklib.h"
 
@@ -90,18 +91,28 @@ int VKObject::Login(std::string EMail,std::string Passwd)
     RequestAnswer="";
     request->perform();
     delete request;
-    int is=RequestAnswer.find("Location: ");
-    is=RequestAnswer.find("#",is+1)+3;
-    int i=is;
+    //cout<<RequestAnswer<<'\n';
+
+    pcre *re;
+    const char *error;
+    int erroffset;
+    int ovector[60];
+
+    re = pcre_compile("Location:(.*)sid=(.*)\n", PCRE_CASELESS, &error, &erroffset, NULL);
+    pcre_exec (re,  NULL, vklib::RequestAnswer.c_str(), vklib::RequestAnswer.size(), 0, PCRE_NOTEMPTY, ovector, 60);
+
+    char x[100]={'\0'};
+    RequestAnswer.copy(x,ovector[5]-ovector[3],ovector[3]);
     sid="";
-    while ((RequestAnswer[i]!='\xD')and(RequestAnswer[i]!='\xA'))
-        sid+=RequestAnswer[i++];
-    is=RequestAnswer.find("remixpassword");
-    is=RequestAnswer.find("=",is+1)+1;
+    sid+=x;
+
+    re = pcre_compile("remixpassword=(.*?);", PCRE_CASELESS, &error, &erroffset, NULL);
+    pcre_exec (re,  NULL, vklib::RequestAnswer.c_str(), vklib::RequestAnswer.size(), 0, PCRE_NOTEMPTY, ovector, 60);
+    x={'\0'};
+    RequestAnswer.copy(x,ovector[3]-ovector[2],ovector[2]);
     remixpassword="";
-    i=is;
-    while (RequestAnswer[i]!=';')
-        remixpassword+=RequestAnswer[i++];
+    remixpassword+=x;
+
     Self->RetrievePersonalInfo();
     return 0;
 }

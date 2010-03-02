@@ -11,6 +11,9 @@
 
 namespace vklib
 {
+
+    extern std::string RequestAnswer;
+
     struct FileCacheStruct
     {
         std::string url;
